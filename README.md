@@ -27,7 +27,7 @@ _🧬 A general pipeline for data processing of 3 letter sequencing methods._
   - Creates a single, complete dataset.
   - Ends manual file merging.
 
-- **⚡🚀 Simplified, Fast & Resource-Efficient Processing**
+- **🚀 Simplified, Fast & Resource-Efficient Processing**
   - Turns complex steps into easy ones.
   - Built for speed.
   - Parameterized for efficiency.
