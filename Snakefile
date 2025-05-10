@@ -1,5 +1,6 @@
 from collections import defaultdict
 from snakemake.utils import validate
+from workflow_utils import preprocess_config
 
 
 configfile: "default.yaml"
@@ -11,28 +12,16 @@ validate(workflow.configfiles[0], "config.schema.yaml")
 WORKDIR = os.path.relpath(
     config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[0])
 )
-
-
-workdir: WORKDIR
-
-
-def resolve_path(path):
-    if os.path.isabs(path):
-        return path
-    else:
-        path = os.path.expanduser(path)
-        if os.path.isabs(path):
-            return path
-        else:
-            return os.path.relpath(path, WORKDIR)
-
-
 TEMPDIR = Path(
     os.path.relpath(
         config.get("tempdir", os.path.join(workflow.basedir, ".tmp")), workflow.basedir
     )
 )
 INTERNALDIR = Path("internal_files")
+
+
+workdir: WORKDIR
+
 
 PATH = config["path"]
 
@@ -48,46 +37,27 @@ BASE_CHANGE = config.get("base_change", "A,G")
 SPLICE_GENOME = config.get("splice_genome", True)
 SPLICE_CONTAM = config.get("splice_contamination", False)
 
-
-REF = config["reference"]
-for k, v in REF.items():
-    REF[k] = [resolve_path(v2) for v2 in v]
-
-CONTAMINATION_FASTA = REF.get("contamination", [])
-GENES_FASTA = REF.get("genes", [])
-GENOME_FASTA = REF.get("genome", [])
-
-REF_TYPES = (["contamination"] if len(CONTAMINATION_FASTA) > 0 else []) + [
-    "genes",
-    "genome",
-]
-
-
-SAMPLE2DATA = defaultdict(lambda: defaultdict(dict))
-for s, v in config[f"samples"].items():
-    for i, v2 in enumerate(v["data"], 1):
-        r = f"run{i}"
-        SAMPLE2DATA[str(s)][r] = {k: resolve_path(v3) for k, v3 in dict(v2).items()}
+REF, READS = preprocess_config(config, WORKDIR)
 
 
 rule all:
     input:
-        expand("report_reads/unmap/{sample}.count", sample=SAMPLE2DATA.keys()),
+        expand("report_reads/unmap/{sample}.count", sample=READS.keys()),
         expand(
             "report_reads/combined/{sample}.{reftype}.count",
-            sample=SAMPLE2DATA.keys(),
-            reftype=REF_TYPES,
+            sample=READS.keys(),
+            reftype=REF.keys(),
         ),
         expand(
             "report_reads/dedup/{sample}.{reftype}.count",
-            sample=SAMPLE2DATA.keys(),
-            reftype=REF_TYPES,
+            sample=READS.keys(),
+            reftype=REF.keys(),
         ),
 
 
 rule cutadapt_SE:
     input:
-        lambda wildcards: SAMPLE2DATA[wildcards.sample][wildcards.rn].get("R1", "/"),
+        lambda wildcards: READS[wildcards.sample][wildcards.rn].get("R1", "/"),
     output:
         c=temp(TEMPDIR / "trimmed_reads/SE/{sample}_{rn}_R1.fq.gz"),
         s=INTERNALDIR / "discarded_reads/{sample}_{rn}_tooshort_R1.fq.gz",
@@ -103,8 +73,8 @@ rule cutadapt_SE:
 
 rule cutadapt_PE:
     input:
-        lambda wildcards: SAMPLE2DATA[wildcards.sample][wildcards.rn].get("R1", "/"),
-        lambda wildcards: SAMPLE2DATA[wildcards.sample][wildcards.rn].get("R2", "/"),
+        lambda wildcards: READS[wildcards.sample][wildcards.rn].get("R1", "/"),
+        lambda wildcards: READS[wildcards.sample][wildcards.rn].get("R2", "/"),
     output:
         c=[
             temp(TEMPDIR / "trimmed_reads/PE/{sample}_{rn}_R1.fq.gz"),
@@ -129,7 +99,7 @@ rule cutadapt_PE:
 
 rule combine_contamination_fa:
     input:
-        CONTAMINATION_FASTA,
+        REF.get("contamination", []),
     output:
         fa=INTERNALDIR / "reference_file/contamination.fa",
         fai=INTERNALDIR / "reference_file/contamination.fa.fai",
@@ -278,7 +248,7 @@ rule extract_unmapped_from_premap_PE:
 
 rule prepare_genes_index:
     input:
-        GENES_FASTA,
+        REF.get("genes", []),
     output:
         fa=INTERNALDIR / "genes_index/genes.fa",
         index=INTERNALDIR / "genes_index/genes.3n.CT.1.ht2",
@@ -299,7 +269,7 @@ rule hisat2_3n_mapping_genes_SE:
     input:
         fq1=(
             TEMPDIR / "prefilter_reads/SE/{sample}_{rn}_R1.fq.gz"
-            if len(CONTAMINATION_FASTA) > 0
+            if "contamination" in REF
             else TEMPDIR / "trimmed_reads/SE/{sample}_{rn}_R1.fq.gz"
         ),
         index=INTERNALDIR / "genes_index/genes.3n.CT.1.ht2",
@@ -323,12 +293,12 @@ rule hisat2_3n_mapping_genes_PE:
     input:
         fq1=(
             TEMPDIR / "prefilter_reads/PE/{sample}_{rn}_R1.fq.gz"
-            if len(CONTAMINATION_FASTA) > 0
+            if "contamination" in REF
             else TEMPDIR / "trimmed_reads/PE/{sample}_{rn}_R1.fq.gz"
         ),
         fq2=(
             TEMPDIR / "prefilter_reads/PE/{sample}_{rn}_R2.fq.gz"
-            if len(CONTAMINATION_FASTA) > 0
+            if "contamination" in REF
             else TEMPDIR / "trimmed_reads/PE/{sample}_{rn}_R2.fq.gz"
         ),
         index=INTERNALDIR / "genes_index/genes.3n.CT.1.ht2",
@@ -506,7 +476,7 @@ rule stat_unmapped:
     input:
         lambda wildcards: [
             INTERNALDIR / f"discarded_reads/{wildcards.sample}_{rn}_unmap_R1.fq.gz"
-            for rn in SAMPLE2DATA[wildcards.sample].keys()
+            for rn in READS[wildcards.sample].keys()
         ],
     output:
         "report_reads/unmap/{sample}.count",
@@ -526,7 +496,7 @@ rule combine_runs:
                 else TEMPDIR
                 / f"{wildcards.reftype}_bam/SE/{wildcards.sample}_{rn}.bam"
             )
-            for rn, rs in SAMPLE2DATA[wildcards.sample].items()
+            for rn, rs in READS[wildcards.sample].items()
         ],
     output:
         temp(TEMPDIR / "combined_runs/{sample}.{reftype}.bam"),
