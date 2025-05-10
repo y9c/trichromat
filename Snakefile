@@ -9,9 +9,6 @@ configfile: "default.yaml"
 validate(workflow.configfiles[0], "config.schema.yaml")
 
 
-WORKDIR = os.path.relpath(
-    config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[0])
-)
 TEMPDIR = Path(
     os.path.relpath(
         config.get("tempdir", os.path.join(workflow.basedir, ".tmp")), workflow.basedir
@@ -20,7 +17,19 @@ TEMPDIR = Path(
 INTERNALDIR = Path("internal_files")
 
 
-workdir: WORKDIR
+if workflow._workdir_handler is None:
+
+    WORKDIR = os.path.relpath(
+        config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[0])
+    )
+
+    workdir: WORKDIR
+
+else:
+    WORKDIR = workflow._workdir_handler.workdir
+
+
+config["_REF"], config["_READS"] = preprocess_config(config, WORKDIR)
 
 
 PATH = config["path"]
@@ -36,8 +45,8 @@ GENE_NORC = config.get("gene_norc", True)
 BASE_CHANGE = config.get("base_change", "A,G")
 SPLICE_GENOME = config.get("splice_genome", True)
 SPLICE_CONTAM = config.get("splice_contamination", False)
-
-REF, READS = preprocess_config(config, WORKDIR)
+REF = config.get("_REF", {})
+READS = config.get("_READS", {})
 
 
 rule all:
