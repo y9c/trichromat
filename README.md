@@ -1,7 +1,10 @@
 # trichromat
 
-for 3 letter seqquencing methods analysis
-![log](./docs/trichromat-logo.svg)
+_For 3 letter seqquencing methods analysis_
+
+<center>
+    <img src="./docs/trichromat-logo.svg" width="50%" alt="logo" />
+</center>
 
 &nbsp;
 
