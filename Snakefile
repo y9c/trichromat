@@ -2,11 +2,14 @@ from collections import defaultdict
 from snakemake.utils import validate
 
 
-validate(workflow.configfiles[-1], "config.schema.yaml")
+configfile: "default.yaml"
+
+
+validate(workflow.configfiles[0], "config.schema.yaml")
 
 
 WORKDIR = os.path.relpath(
-    config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[-1])
+    config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[0])
 )
 
 

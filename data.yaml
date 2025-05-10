@@ -3,7 +3,7 @@ cores: 64
 
 # can be "ECLIP10", "ECLIP6", "TAKARAV3", "SACSEQV3", "STRANDED"
 libtype: ECLIP6
-base_change: 'A,G'
+# base_change: 'A,G'
 markdup: true
 strandness: true
 gene_norc: true
