@@ -2,9 +2,9 @@
 
 _For 3 letter seqquencing methods analysis_
 
-<center>
+<p align="center">
     <img src="./docs/trichromat-logo.svg" width="50%" alt="logo" />
-</center>
+</p>
 
 &nbsp;
 
