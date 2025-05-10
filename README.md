@@ -11,21 +11,22 @@ _🧬 A general pipeline for data processing of 3 letter sequencing methods._
 - **✂️ Clean Reads with Built-in & Custom Options**
 
   - Auto-detects & removes adapters.
-  - Includes common adapter library.
+  - Built-in support for multiple library preparation schemes
   - Supports your custom adapters.
-  - Boosts data quality for analysis.
+  - Optional contamination reads removal.
+  - mask high abundant reads (rRNA, spike-in oligo, ...) before genome alignment.
 
 - **⚡ Processes Single-End (SE) & Paired-End (PE) Sequencing Data Simultaneously**
 
   - Handles both SE and PE reads.
-  - Adapts workflow automatically.
+  - Mixed SE and PE reads for one sample is also supported.
   - Use for various sequencing projects.
 
 - **➕ Auto-Combines Data from Multiple Sequencing Runs**
 
   - Joins data from multiple runs for one sample.
   - Creates a single, complete dataset.
-  - Ends manual file merging.
+  - Report the combine process in the final report.
 
 - **🚀 Simplified, Fast & Resource-Efficient Processing**
   - Turns complex steps into easy ones.
