@@ -29,7 +29,7 @@ else:
     WORKDIR = workflow._workdir_handler.workdir
 
 
-config["_REF"], config["_READS"] = preprocess_config(config, WORKDIR)
+preprocess_config(config, WORKDIR)
 
 
 PATH = config["path"]
