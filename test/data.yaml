@@ -32,17 +32,17 @@ genome_index: ~/reference/genome/Homo_sapiens/hisat2_tx_3n/GRCh38.release110
 
 reference:
   contamination:
-    - test/ref/contamination.fa.gz
+    - ref/contamination.fa.gz
   genes:
-    - test/ref/spikein.fa
-    - test/ref/human_rRNA.fa
+    - ref/spikein.fa
+    - ref/human_rRNA.fa
 
 samples:
   HeLa-treat-rep1:
     data:
-      - R1: test/data/SRR21070405_1.fastq.gz
-        R2: test/data/SRR21070405_2.fastq.gz
-      - R1: test/data/SRR21070406_1.fastq.gz
+      - R1: data/SRR21070405_1.fastq.gz
+        R2: data/SRR21070405_2.fastq.gz
+      - R1: data/SRR21070406_1.fastq.gz
   HeLa-treat-rep2:
     data:
-      - R1: test/data/SRR21070404_1.fastq.gz
+      - R1: data/SRR21070404_1.fastq.gz
