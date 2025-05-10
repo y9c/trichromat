@@ -8,8 +8,6 @@ _🧬 A general pipeline for data processing of 3 letter sequencing methods._
 
 ## ✨ Pipeline Power-Ups ✨
 
-This pipeline makes your sequencing data processing easier, faster, and more reliable:
-
 - **✂️ Clean Reads with Built-in & Custom Options**
 
   - Auto-detects & removes adapters.
