@@ -28,6 +28,13 @@ def _preprocess_reference(config, workdir):
         ref[k] = [resolve_path(v2, workdir) for v2 in v]
     if "genome" not in ref:
         ref["genome"] = []
+    else:
+        # check if genome records is more than 1, if so, raise error
+        if len(ref["genome"]) > 1:
+            raise ValueError(
+                "Multiple genome records found in reference. Please provide only one genome record.\n"
+                "Automatically join multiple genome records into one require rebuild the index file, which takes a lot of time.\n"
+            )
     # if contamination in ref but is empty, remove it
     if "contamination" in ref and len(ref["contamination"]) == 0:
         del ref["contamination"]

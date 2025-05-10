@@ -508,11 +508,12 @@ rule combine_runs:
             for rn, rs in READS[wildcards.sample].items()
         ],
     output:
-        temp(TEMPDIR / "combined_runs/{sample}.{reftype}.bam"),
+        bam=temp(TEMPDIR / "combined_runs/{sample}.{reftype}.bam"),
+        bai=temp(TEMPDIR / "combined_runs/{sample}.{reftype}.bam.bai"),
     threads: 16
     shell:
         """
-        {config[path][samtools]} merge -@ {threads} -f --write-index -o {output}##idx##{output}.bai {input}
+        {config[path][samtools]} merge -@ {threads} -f --write-index -o {output.bam}##idx##{output.bai} {input}
         """
 
 
