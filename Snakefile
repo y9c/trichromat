@@ -97,7 +97,7 @@ rule cutadapt_SE:
     threads: 16
     shell:
         """
-        {PATH[cutseq]} -t {threads} -A {params.library:q} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
+        {config[path][cutseq]} -t {threads} -A {params.library:q} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
         """
 
 
@@ -120,7 +120,7 @@ rule cutadapt_PE:
     threads: 16
     shell:
         """
-        {PATH[cutseq]} -t {threads} -A {params.library:q} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
+        {config[path][cutseq]} -t {threads} -A {params.library:q} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
         """
 
 
@@ -136,7 +136,7 @@ rule combine_contamination_fa:
     shell:
         """
         zcat -f {input} > {output.fa}
-        {PATH[samtools]} faidx {output.fa} --fai-idx {output.fai}
+        {config[path][samtools]} faidx {output.fa} --fai-idx {output.fai}
         """
 
 
@@ -147,11 +147,12 @@ rule build_contamination_hisat3n_index:
         INTERNALDIR / "reference_file/contamination.3n.GA.1.ht2",
     params:
         prefix=str(INTERNALDIR / "reference_file/contamination"),
+        base_change=BASE_CHANGE,
     threads: 4
     shell:
         """
         rm -f {params.prefix}*.ht2
-        {PATH[hisat3nbuild]} -p {threads} --base-change {BASE_CHANGE} {input} {params.prefix}
+        {config[path][hisat3nbuild]} -p {threads} --base-change {params.base_change} {input} {params.prefix}
         """
 
 
@@ -175,12 +176,13 @@ rule hisat2_3n_mapping_contamination_SE:
             if SPLICE_CONTAM
             else "--no-spliced-alignment"
         ),
+        base_change=BASE_CHANGE,
     threads: 24
     shell:
         """
-        {PATH[hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -U {input.fq} --base-change {BASE_CHANGE} {params.directional} {params.splice_args} \
+        {config[path][hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -U {input.fq} --base-change {params.base_change} {params.directional} {params.splice_args} \
             --np 0 --rdg 5,3 --rfg 5,3 --sp 9,3 --mp 3,1 --score-min L,-2,-0.8 |\
-            {PATH[samtools]} view -@ {threads} -e '!flag.unmap && qlen-sclen >= 30 && [XM] * 15 < qlen-sclen' -O BAM -U {output.unmapped} -o {output.mapped}
+            {config[path][samtools]} view -@ {threads} -e '!flag.unmap && qlen-sclen >= 30 && [XM] * 15 < qlen-sclen' -O BAM -U {output.unmapped} -o {output.mapped}
         """
 
 
@@ -205,13 +207,14 @@ rule hisat2_3n_mapping_contamination_PE:
             if SPLICE_CONTAM
             else "--no-spliced-alignment"
         ),
+        base_change=BASE_CHANGE,
     threads: 24
     shell:
         """
-        {PATH[hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -1 {input.fq1} -2 {input.fq2} --base-change {BASE_CHANGE} {params.directional} {params.splice_args} \
+        {config[path][hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -1 {input.fq1} -2 {input.fq2} --base-change {params.base_change} {params.directional} {params.splice_args} \
             --no-discordant --no-mixed \
             --np 0 --rdg 5,3 --rfg 5,3 --sp 9,3 --mp 3,1 --score-min L,-2,-0.8 |\
-            {PATH[samtools]} view -@ {threads} -e 'flag.proper_pair && !flag.unmap && !flag.munmap && qlen-sclen >= 30 && [XM] * 15 < (qlen-sclen)' -O BAM -U {output.unmapped} -o {output.mapped}
+            {config[path][samtools]} view -@ {threads} -e 'flag.proper_pair && !flag.unmap && !flag.munmap && qlen-sclen >= 30 && [XM] * 15 < (qlen-sclen)' -O BAM -U {output.unmapped} -o {output.mapped}
         """
 
 
@@ -232,7 +235,7 @@ rule fix_hisat_tlen_bug_premap_PE:
         temp(TEMPDIR / "contamination_fixmate/PE/{sample}_{rn}.bam"),
     threads: 4
     shell:
-        "{PATH[samtools]} fixmate -@ {threads} -m -O BAM {input} {output}"
+        "{config[path][samtools]} fixmate -@ {threads} -m -O BAM {input} {output}"
 
 
 rule sort_bam_contamination:
@@ -243,7 +246,7 @@ rule sort_bam_contamination:
     threads: 24
     shell:
         """
-        {PATH[samtools]} sort -@ {threads} -m 3G -O BAM -o {output} {input}
+        {config[path][samtools]} sort -@ {threads} -m 3G -O BAM -o {output} {input}
         """
 
 
@@ -254,7 +257,7 @@ rule extract_unmapped_from_premap_SE:
         r1=temp(TEMPDIR / "prefilter_reads/SE/{sample}_{rn}_R1.fq.gz"),
     shell:
         """
-        {PATH[samtools]} fastq -0 {output.r1} -n {input}
+        {config[path][samtools]} fastq -0 {output.r1} -n {input}
         """
 
 
@@ -266,7 +269,7 @@ rule extract_unmapped_from_premap_PE:
         r2=temp(TEMPDIR / "prefilter_reads/PE/{sample}_{rn}_R2.fq.gz"),
     shell:
         """
-        {PATH[samtools]} fastq -1 {output.r1} -2 {output.r2} -0 /dev/null -s /dev/null -n {input}
+        {config[path][samtools]} fastq -1 {output.r1} -2 {output.r2} -0 /dev/null -s /dev/null -n {input}
         """
 
 
@@ -281,13 +284,14 @@ rule prepare_genes_index:
         index=INTERNALDIR / "genes_index/genes.3n.CT.1.ht2",
     params:
         prefix=INTERNALDIR / "genes_index/genes",
+        base_change=BASE_CHANGE,
     threads: 4
     shell:
         """
         zcat -f {input} | sed 's/(//g' | sed 's/)//g' > {output.fa}
-        {PATH[samtools]} faidx {output.fa}
+        {config[path][samtools]} faidx {output.fa}
         rm -f {params.prefix}.3n.*.ht2
-        {PATH[hisat3nbuild]} -p {threads} --base-change {BASE_CHANGE} {output.fa} {params.prefix}
+        {config[path][hisat3nbuild]} -p {threads} --base-change {params.base_change} {output.fa} {params.prefix}
         """
 
 
@@ -305,12 +309,13 @@ rule hisat2_3n_mapping_genes_SE:
     params:
         index=INTERNALDIR / "genes_index/genes",
         directional="--directional-mapping" if STRANDNESS else "",
+        base_change=BASE_CHANGE,
     threads: 24
     shell:
         """
-        {PATH[hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -U {input.fq1} --base-change {BASE_CHANGE} {params.directional} \
+        {config[path][hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -U {input.fq1} --base-change {params.base_change} {params.directional} \
             --avoid-pseudogene --no-softclip --no-spliced-alignment --np 0 --rdg 5,3 --rfg 5,3 --mp 3,1 --score-min L,-3,-0.75 |\
-            {PATH[samtools]} view -@ {threads} -O BAM -o {output.bam}
+            {config[path][samtools]} view -@ {threads} -O BAM -o {output.bam}
         """
 
 
@@ -333,12 +338,13 @@ rule hisat2_3n_mapping_genes_PE:
     params:
         index=INTERNALDIR / "genes_index/genes",
         directional="--directional-mapping" if STRANDNESS else "",
+        base_change=BASE_CHANGE,
     threads: 24
     shell:
         """
-        {PATH[hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -1 {input.fq1} -2 {input.fq2} --base-change {BASE_CHANGE} {params.directional} \
+        {config[path][hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -1 {input.fq1} -2 {input.fq2} --base-change {params.base_change} {params.directional} \
             --avoid-pseudogene --no-softclip --no-spliced-alignment --np 0 --rdg 5,3 --rfg 5,3 --mp 3,1 --score-min L,-3,-0.75 |\
-            {PATH[samtools]} view -@ {threads} -O BAM -o {output.bam}
+            {config[path][samtools]} view -@ {threads} -O BAM -o {output.bam}
         """
 
 
@@ -363,9 +369,9 @@ rule filter_and_sort_bam_genes:
     threads: 16
     shell:
         """
-        {PATH[samtools]} view -e '{params.flt}' -@ {threads} -u -U {output.unmap} {input} |\
-            {PATH[samtools]} fixmate -@ {threads} -m -u - - |\
-            {PATH[samtools]} sort -m 3G -O BAM -o {output.mapped}
+        {config[path][samtools]} view -e '{params.flt}' -@ {threads} -u -U {output.unmap} {input} |\
+            {config[path][samtools]} fixmate -@ {threads} -m -u - - |\
+            {config[path][samtools]} sort -m 3G -O BAM -o {output.mapped}
         """
 
 
@@ -377,7 +383,7 @@ rule extract_unmapped_reads_SE_from_genes:
     threads: 4
     shell:
         """
-        {PATH[samtools]} fastq -@ {threads} -0 {output} {input}
+        {config[path][samtools]} fastq -@ {threads} -0 {output} {input}
         """
 
 
@@ -390,7 +396,7 @@ rule extract_unmapped_reads_PE_from_genes:
     threads: 4
     shell:
         """
-        {PATH[samtools]} fastq -@ {threads} -1 {output.r1} -2 {output.r2} -0 /dev/null -s /dev/null -n {input}
+        {config[path][samtools]} fastq -@ {threads} -1 {output.r1} -2 {output.r2} -0 /dev/null -s /dev/null -n {input}
         """
 
 
@@ -411,12 +417,13 @@ rule hisat2_3n_mapping_genome_SE:
             if SPLICE_GENOME
             else "--no-spliced-alignment"
         ),
+        base_change=BASE_CHANGE,
     threads: 24
     shell:
         """
-        {PATH[hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -U {input.fq1} --base-change {BASE_CHANGE} {params.directional} {params.splice_args} \
+        {config[path][hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -U {input.fq1} --base-change {params.base_change} {params.directional} {params.splice_args} \
             --avoid-pseudogene --np 0 --rdg 5,3 --rfg 5,3 --sp 9,3 --mp 3,1 --score-min L,-3,-0.75 |\
-            {PATH[samtools]} view -@ {threads} -O BAM -o {output.bam}
+            {config[path][samtools]} view -@ {threads} -O BAM -o {output.bam}
         """
 
 
@@ -435,12 +442,13 @@ rule hisat2_3n_mapping_genome_PE:
             if SPLICE_GENOME
             else "--no-spliced-alignment"
         ),
+        base_change=BASE_CHANGE,
     threads: 24
     shell:
         """
-        {PATH[hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -1 {input.fq1} -2 {input.fq2} --base-change {BASE_CHANGE} {params.directional} {params.splice_args} \
+        {config[path][hisat3n]} --index {params.index} -p {threads} --summary-file {output.summary} --new-summary -q -1 {input.fq1} -2 {input.fq2} --base-change {params.base_change} {params.directional} {params.splice_args} \
             --avoid-pseudogene --np 0 --rdg 5,3 --rfg 5,3 --sp 9,3 --mp 3,1 --score-min L,-3,-0.75 |\
-            {PATH[samtools]} view -@ {threads} -O BAM -o {output.bam}
+            {config[path][samtools]} view -@ {threads} -O BAM -o {output.bam}
         """
 
 
@@ -460,9 +468,9 @@ rule filter_and_sort_bam_genome:
     shell:
         # samtools collate -@ 4 -O -u example.bam | 
         """
-        {PATH[samtools]} view -e '{params.flt}' -@ {threads} -u -U {output.unmap} {input} |\
-            {PATH[samtools]} fixmate -@ {threads} -m -u - - |\
-            {PATH[samtools]} sort -m 3G -O BAM -o {output.mapped}
+        {config[path][samtools]} view -e '{params.flt}' -@ {threads} -u -U {output.unmap} {input} |\
+            {config[path][samtools]} fixmate -@ {threads} -m -u - - |\
+            {config[path][samtools]} sort -m 3G -O BAM -o {output.mapped}
         """
 
 
@@ -477,7 +485,7 @@ rule extract_unmapped_reads_SE_from_genome:
     threads: 4
     shell:
         """
-        {PATH[samtools]} fastq -@ {threads} -0 {output} {input}
+        {config[path][samtools]} fastq -@ {threads} -0 {output} {input}
         """
 
 
@@ -490,7 +498,7 @@ rule extract_unmapped_reads_PE_from_genome:
     threads: 4
     shell:
         """
-        {PATH[samtools]} fastq -1 {output.r1} -2 {output.r2} -0 /dev/null -s /dev/null -n {input}
+        {config[path][samtools]} fastq -1 {output.r1} -2 {output.r2} -0 /dev/null -s /dev/null -n {input}
         """
 
 
@@ -505,7 +513,7 @@ rule stat_unmapped:
     threads: 2
     shell:
         """
-        zcat {input} | {PATH[samtools]} view -@ {threads} -c > {output}
+        zcat {input} | {config[path][samtools]} view -@ {threads} -c > {output}
         """
 
 
@@ -525,7 +533,7 @@ rule combine_runs:
     threads: 16
     shell:
         """
-        {PATH[samtools]} merge -@ {threads} -f --write-index -o {output}##idx##{output}.bai {input}
+        {config[path][samtools]} merge -@ {threads} -f --write-index -o {output}##idx##{output}.bai {input}
         """
 
 
@@ -538,8 +546,8 @@ rule stat_combined:
     threads: 2
     shell:
         """
-        {PATH[samtools]} flagstat -@ {threads} -O TSV {input} > {output.stat}
-        {PATH[samtools]} view -@ {threads} -c -F 384 {input} > {output.n}
+        {config[path][samtools]} flagstat -@ {threads} -O TSV {input} > {output.stat}
+        {config[path][samtools]} view -@ {threads} -c -F 384 {input} > {output.n}
         """
 
 
@@ -551,12 +559,12 @@ rule drop_duplicates:
         txt="report_reads/dedup/{sample}.{reftype}.log",
     params:
         umi="--barcode-rgx '.*_([!-?A-~]+)'",
+        markdup=MARKDUP,
     threads: 16
     shell:
-        # use bash, if MARKDUP is true, use samtools markdup, otherwise use cp
         """
-        if [[ "{MARKDUP}" == "True" ]]; then
-            {PATH[samtools]} markdup -@ {threads} -r -S --mode t --include-fails --duplicate-count --write-index {params.umi} -f {output.txt} {input} {output.bam}
+        if [[ "{params.markdup}" == "True" ]]; then
+            {config[path][samtools]} markdup -@ {threads} -r -S --mode t --include-fails --duplicate-count --write-index {params.umi} -f {output.txt} {input} {output.bam}
         else
             cp {input.bam} {output.bam} && touch {output.txt}
         fi
@@ -572,6 +580,6 @@ rule stat_dedup:
     threads: 2
     shell:
         """
-        {PATH[samtools]} flagstat -@ {threads} -O TSV {input} > {output.stat}
-        {PATH[samtools]} view -@ {threads} -c -F 384 {input} > {output.n}
+        {config[path][samtools]} flagstat -@ {threads} -O TSV {input} > {output.stat}
+        {config[path][samtools]} view -@ {threads} -c -F 384 {input} > {output.n}
         """
