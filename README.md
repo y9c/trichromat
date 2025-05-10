@@ -14,7 +14,7 @@ _🧬 A general pipeline for data processing of 3 letter sequencing methods._
   - Built-in support for multiple library preparation schemes
   - Supports your custom adapters.
   - Optional contamination reads removal.
-  - mask high abundant reads (rRNA, spike-in oligo, ...) before genome alignment.
+  - Mask high abundant reads (rRNA, spike-in oligo, ...) before genome alignment.
 
 - **⚡ Processes Single-End (SE) & Paired-End (PE) Sequencing Data Simultaneously**
 
