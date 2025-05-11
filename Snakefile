@@ -6,7 +6,7 @@ from workflow_utils import preprocess_config
 configfile: "default.yaml"
 
 
-validate(workflow.configfiles[0], "config.schema.yaml")
+validate(config, "config.schema.yaml")
 
 
 TEMPDIR = Path(
@@ -18,13 +18,11 @@ INTERNALDIR = Path("internal_files")
 
 
 if workflow._workdir_handler is None:
-
     WORKDIR = os.path.relpath(
         config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[0])
     )
 
     workdir: WORKDIR
-
 else:
     WORKDIR = workflow._workdir_handler.workdir
 
