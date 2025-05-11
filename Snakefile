@@ -17,14 +17,14 @@ TEMPDIR = Path(
 INTERNALDIR = Path("internal_files")
 
 
-if workflow._workdir_handler is None:
+if workflow._workdir_handler is not None:
+    WORKDIR = workflow._workdir_handler.workdir
+else:
     WORKDIR = os.path.relpath(
         config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[0])
     )
 
     workdir: WORKDIR
-else:
-    WORKDIR = workflow._workdir_handler.workdir
 
 
 preprocess_config(config, WORKDIR)
@@ -33,7 +33,10 @@ preprocess_config(config, WORKDIR)
 PATH = config["path"]
 
 LIBTYPE = config["libtype"]
-WITH_UMI = LIBTYPE in ["ECLIP10", "ECLIP6", "TAKARAV3", "SACSEQV3"]
+WITH_UMI = config.get(
+    "with_umi",
+    LIBTYPE in ["INLINE", "ECLIP6", "ECLIP10", "TAKARAV3", "SACSEQ", "SACSEQV3"],
+)
 MARKDUP = config.get("markdup", True)
 # force markdup to be true for UMI
 # if WITH_UMI:
@@ -535,18 +538,42 @@ rule drop_duplicates:
     output:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
         txt="report_reads/dedup/{sample}.{reftype}.log",
-    params:
-        umi="--barcode-rgx '.*_([!-?A-~]+)'",
-        markdup=MARKDUP,
+    # params:
+    #     umi="--barcode-rgx '.*_([!-?A-~]+)'",
+    #     markdup=MARKDUP,
     threads: 16
-    shell:
-        """
-        if [[ "{params.markdup}" == "True" ]]; then
-            {config[path][samtools]} markdup -@ {threads} -r -S --mode t --include-fails --duplicate-count --write-index {params.umi} -f {output.txt} {input} {output.bam}
-        else
-            cp {input.bam} {output.bam} && touch {output.txt}
-        fi
-        """
+    #  shell:
+    #      """
+    #      if [[ "{params.markdup}" == "True" ]]; then
+    #          {config[path][samtools]} markdup -@ {threads} -c -S -l 600 --mode t -t --include-fails --duplicate-count --write-index {params.umi} -f {output.txt} {input} {output.bam}
+    #      else
+    #          cp {input.bam} {output.bam} && touch {output.txt}
+    #      fi
+    #      """
+    run:
+        if WITH_UMI:
+            shell(
+                """
+            {config[path][umicollapse]} \
+                -t 2 -T {threads} --data naive --merge avgqual --two-pass -i {input.bam} -o {output.bam} >{output.txt}
+            """
+            )
+        elif MARKDUP:
+            shell(
+                """
+            {config[path][markduplicates]} \
+                --TMP_DIR $TMPDIR \
+                --DUPLICATE_SCORING_STRATEGY SUM_OF_BASE_QUALITIES --REMOVE_DUPLICATES true --VALIDATION_STRINGENCY SILENT \
+                -I {input} -O {output.bam} -M {output.txt} \
+            """
+            )
+        else:
+            shell(
+                """
+                cp {input.bam} {output.bam}
+                touch {output.txt}
+            """
+            )
 
 
 rule stat_dedup:

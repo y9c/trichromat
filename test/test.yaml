@@ -18,14 +18,12 @@ splice_genome: true
 
 # build in configure for the pipeline
 path:
-  # cutseq: /pipeline/micromamba/bin/cutseq
-  # samtools: /pipeline/micromamba/bin/samtools
-  # hisat3n: /pipeline/hisat2-hisat-3n/hisat-3n
-  # hisat3nbuild: /pipeline/hisat2-hisat-3n/hisat-3n-build
   cutseq: ~/.micromamba/bin/cutseq
   samtools: ~/tools/samtools/samtools
   hisat3n: ~/tools/hisat2/hisat-3n
   hisat3nbuild: ~/tools/hisat2/hisat-3n-build
+  umicollapse: ~/tools/jdk-17.0.11+9/bin/java -server -Xms8G -Xmx36G -Xss100M -jar ~/tools/UMICollapse/umicollapse.jar bam
+  markduplicates: ~/tools/jdk-17.0.11+9/bin/java -Xms8G -Xmx36G -Xss100M -jar ~/tools/gatk-4.2.5.0/gatk-package-4.2.5.0-local.jar MarkDuplicates
 
 # TODO: if the genome index is not available, the pipeline will build it automatically
 genome_index: ~/reference/genome/Homo_sapiens/hisat2_tx_3n/GRCh38.release110
