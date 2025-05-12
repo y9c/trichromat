@@ -109,7 +109,6 @@ properties:
 
 # List of top-level keys that MUST be present in the configuration file.
 required:
-  - cores
   - libtype
   - base_change
   - markdup
