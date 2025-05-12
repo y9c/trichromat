@@ -388,7 +388,7 @@ rule hisat2_3n_mapping_genome_SE:
         fq1=TEMPDIR / "genes_unmapped/SE/{sample}_{rn}_R1.fq.gz",
     output:
         bam=temp(TEMPDIR / "genome_mapping/SE/{sample}_{rn}.bam"),
-        summary="report_reads/mapping/{sample}_{rn}_genome.summary",
+        summary="report_reads/mapping/{sample}_{rn}.genome.summary",
     params:
         index=config.get("genome_index"),
         directional="--directional-mapping" if STRANDNESS else "",
@@ -413,7 +413,7 @@ rule hisat2_3n_mapping_genome_PE:
         fq2=TEMPDIR / "genes_unmapped/PE/{sample}_{rn}_R2.fq.gz",
     output:
         bam=temp(TEMPDIR / "genome_mapping/PE/{sample}_{rn}.bam"),
-        summary="report_reads/mapping/{sample}_{rn}_genome.summary",
+        summary="report_reads/mapping/{sample}_{rn}.genome.summary",
     params:
         index=config.get("genome_index"),
         directional="--directional-mapping" if STRANDNESS else "",
