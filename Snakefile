@@ -21,7 +21,7 @@ if workflow._workdir_handler is not None:
     WORKDIR = workflow._workdir_handler.workdir
 else:
     WORKDIR = os.path.relpath(
-        config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[0])
+        config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[-1])
     )
 
     workdir: WORKDIR
@@ -260,10 +260,10 @@ rule prepare_genes_index:
     input:
         REF.get("genes", []),
     output:
-        fa=INTERNALDIR / "genes_index/genes.fa",
-        index=INTERNALDIR / "genes_index/genes.3n.CT.1.ht2",
+        fa=INTERNALDIR / "reference_file/genes.fa",
+        index=INTERNALDIR / "reference_file/genes.3n.CT.1.ht2",
     params:
-        prefix=INTERNALDIR / "genes_index/genes",
+        prefix=INTERNALDIR / "reference_file/genes",
         base_change=BASE_CHANGE,
     threads: 4
     shell:
@@ -282,12 +282,12 @@ rule hisat2_3n_mapping_genes_SE:
             if "contamination" in REF
             else TEMPDIR / "trimmed_reads/SE/{sample}_{rn}_R1.fq.gz"
         ),
-        index=INTERNALDIR / "genes_index/genes.3n.CT.1.ht2",
+        index=INTERNALDIR / "reference_file/genes.3n.CT.1.ht2",
     output:
         bam=temp(TEMPDIR / "genes_mapping/SE/{sample}_{rn}.bam"),
         summary="report_reads/mapping/{sample}_{rn}.genes.summary",
     params:
-        index=INTERNALDIR / "genes_index/genes",
+        index=INTERNALDIR / "reference_file/genes",
         directional="--directional-mapping" if STRANDNESS else "",
         base_change=BASE_CHANGE,
     threads: 24
@@ -311,12 +311,12 @@ rule hisat2_3n_mapping_genes_PE:
             if "contamination" in REF
             else TEMPDIR / "trimmed_reads/PE/{sample}_{rn}_R2.fq.gz"
         ),
-        index=INTERNALDIR / "genes_index/genes.3n.CT.1.ht2",
+        index=INTERNALDIR / "reference_file/genes.3n.CT.1.ht2",
     output:
         bam=temp(TEMPDIR / "genes_mapping/PE/{sample}_{rn}.bam"),
         summary="report_reads/mapping/{sample}_{rn}.genes.summary",
     params:
-        index=INTERNALDIR / "genes_index/genes",
+        index=INTERNALDIR / "reference_file/genes",
         directional="--directional-mapping" if STRANDNESS else "",
         base_change=BASE_CHANGE,
     threads: 24
