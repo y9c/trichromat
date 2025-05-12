@@ -1,7 +1,8 @@
 # build in configure for the pipeline
 path:
-  cutseq: /pipeline/micromamba/bin/cutseq
-  samtools: /pipeline/micromamba/bin/samtools
+  cutseq: /pipeline/bin/cutseq
+  samtools: /pipeline/samtools/bin/samtools
+  addtag: /pipeline/bin/add_tag
   hisat3n: /pipeline/hisat2-hisat-3n/hisat-3n
   hisat3nbuild: /pipeline/hisat2-hisat-3n/hisat-3n-build
   umicollapse: java -server -Xms8G -Xmx36G -Xss100M -jar /pipeline/UMICollapse/umicollapse.jar bam
