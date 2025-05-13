@@ -56,6 +56,7 @@ rule build_genome_fa_index:
 rule pileup_by_fwd_strand:
     input:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
+        bai=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam.bai",
         fa=lambda wildcards: (
             INTERNALDIR / "reference_file/genes.fa"
             if wildcards.reftype == "genes"
@@ -86,6 +87,7 @@ rule pileup_by_fwd_strand:
 rule pileup_by_rev_strand:
     input:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
+        bai=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam.bai",
         fa=lambda wildcards: (
             INTERNALDIR / "reference_file/genes.fa"
             if wildcards.reftype == "genes"

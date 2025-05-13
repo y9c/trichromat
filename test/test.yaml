@@ -8,13 +8,12 @@ markdup: true
 strandness: true
 gene_norc: true
 splice_genome: true
-# by default, the pipeline will use the strandness information from the library
-# if the strandness is not available, set the strandness to `false`
-# strandness: true
 
-# by default, the pipeline will force remove the PCR duplicates based on the UMI
-# if UMI is not available, you can toggle the markdup to `false` to skip the PCR duplicate removal
-# markdup: true
+cutoff:
+  min_uncon: 1
+  min_depth: 10
+  min_ratio: 0.05
+  min_pval: 0.05
 
 # build in configure for the pipeline
 path:
@@ -53,3 +52,4 @@ samples:
   HeLa-treat-rep2:
     data:
       - R1: data/SRR21070404_1.fastq.gz
+
