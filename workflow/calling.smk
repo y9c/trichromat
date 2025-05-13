@@ -28,6 +28,18 @@ READS = config.get("_READS", {})
 MOTIF_FLANKING = config.get("motif_flanking", 2)
 
 
+rule build_internal_fa_index:
+    input:
+        INTERNALDIR / "reference_file/{reftype}.fa",
+    output:
+        INTERNALDIR / "reference_file/{reftype}.fa.fai",
+    threads: 8
+    shell:
+        """
+        {PATH[samtools]} faidx -@ {threads} {input} --fai-idx {output}
+        """
+
+
 rule build_genome_fa_index:
     input:
         REF["genome"][0],
@@ -58,14 +70,14 @@ rule pileup_by_fwd_strand:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
         bai=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam.bai",
         fa=lambda wildcards: (
-            INTERNALDIR / "reference_file/genes.fa"
-            if wildcards.reftype == "genes"
-            else REF["genome"][0]
+            REF["genome"][0]
+            if wildcards.reftype == "genome"
+            else INTERNALDIR / f"reference_file/{wildcards.reftype}.fa"
         ),
         fai=lambda wildcards: (
-            INTERNALDIR / "reference_file/genes.fa.fai"
-            if wildcards.reftype == "genes"
-            else REF["genome"][0] + ".fai"
+            REF["genome"][0] + ".fai"
+            if wildcards.reftype == "genome"
+            else INTERNALDIR / f"reference_file/{wildcards.reftype}.fa.fai"
         ),
     output:
         temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.fwd.tsv.gz"),
