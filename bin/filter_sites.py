@@ -85,12 +85,26 @@ if __name__ == "__main__":
 
     args = ap.parse_args()
 
-    parse_and_filter(
+    df = parse_and_filter(
         args.file,
         min_uncon=args.min_uncon,
         min_depth=args.min_depth,
         min_ratio=args.min_ratio,
         min_pval=args.min_pval,
-    ).collect().write_csv(
-        args.output, separator="\t", float_scientific=True, float_precision=6
     )
+    # polars does not support wrtting compressed file directly
+    if args.output.endswith(".gz"):
+        outfile = args.output[:-3]
+    df.collect().write_csv(
+        outfile, separator="\t", float_scientific=True, float_precision=6
+    )
+    if args.output.endswith(".gz"):
+        import gzip
+        import os
+        import shutil
+
+        with open(outfile, "rb") as f_in:
+            with gzip.open(args.output, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+        os.remove(outfile)
