@@ -84,7 +84,7 @@ rule pileup_by_fwd_strand:
     params:
         ref_base=BASE_CHANGE.split(",")[0],
         ref_col={"A": 5, "C": 6, "G": 7, "T": 8}[BASE_CHANGE.split(",")[0]],
-        alt_col={"A": 6, "C": 5, "G": 8, "T": 7}[BASE_CHANGE.split(",")[-1]],
+        alt_col={"A": 5, "C": 6, "G": 7, "T": 8}[BASE_CHANGE.split(",")[-1]],
         motif_flanking=MOTIF_FLANKING,
         motif_center=MOTIF_FLANKING + 1,
     threads: 16
