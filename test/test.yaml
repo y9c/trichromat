@@ -18,15 +18,22 @@ splice_genome: true
 
 # build in configure for the pipeline
 path:
-  cutseq: ~/.micromamba/bin/cutseq
+  # cutseq: ~/.micromamba/bin/cutseq
+  cutseq: /usr/local/bin/cutseq
   samtools: ~/tools/samtools/samtools
   hisat3n: ~/tools/hisat2/hisat-3n
   hisat3nbuild: ~/tools/hisat2/hisat-3n-build
-  umicollapse: ~/tools/jdk-17.0.11+9/bin/java -server -Xms8G -Xmx36G -Xss100M -jar ~/tools/UMICollapse/umicollapse.jar bam
-  markduplicates: ~/tools/jdk-17.0.11+9/bin/java -Xms8G -Xmx36G -Xss100M -jar ~/tools/gatk-4.2.5.0/gatk-package-4.2.5.0-local.jar MarkDuplicates
+  # umicollapse: ~/tools/jdk-17.0.11+9/bin/java -server -Xms8G -Xmx36G -Xss100M -jar ~/tools/UMICollapse/umicollapse.jar bam
+  # markduplicates: ~/tools/jdk-17.0.11+9/bin/java -Xms8G -Xmx36G -Xss100M -jar ~/tools/gatk-4.2.5.0/gatk-package-4.2.5.0-local.jar MarkDuplicates
+  umicollapse: java -server -Xms8G -Xmx36G -Xss100M -jar ~/tools/UMICollapse/umicollapse.jar bam
+  markduplicates: java -Xms8G -Xmx36G -Xss100M -jar ~/tools/gatk-4.2.6.1/gatk-package-4.2.6.1-local.jar MarkDuplicates
+  pb: ../../bin/pb
+  joinPileup: python ../../bin/join_pileup.py
+  filterSites: python ../../bin/filter_sites.py
 
 # TODO: if the genome index is not available, the pipeline will build it automatically
-genome_index: ~/reference/genome/Homo_sapiens/hisat2_tx_3n/GRCh38.release110
+# genome_index: ~/reference/genome/Homo_sapiens/hisat2_tx_3n/GRCh38.release110
+genome_index: /data/reference/genome/Homo_sapiens/hisat2_tx_3n/GRCh38.release110
 
 reference:
   contamination:
@@ -34,6 +41,8 @@ reference:
   genes:
     - ref/spikein.fa
     - ref/human_rRNA.fa
+  genome:
+    - /data/reference/genome/Homo_sapiens/GRCh38.fa
 
 samples:
   HeLa-treat-rep1:

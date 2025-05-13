@@ -23,8 +23,8 @@ def resolve_path(path, workdir):
 
 
 def _preprocess_reference(config, workdir):
-    ref = config["reference"]
-    for k, v in ref.items():
+    ref = defaultdict(list)
+    for k, v in config["reference"].items():
         ref[k] = [resolve_path(v2, workdir) for v2 in v]
     if "genome" not in ref:
         ref["genome"] = []
@@ -43,7 +43,7 @@ def _preprocess_reference(config, workdir):
 
 def _preprocess_reads(config, workdir):
     reads = defaultdict(lambda: defaultdict(dict))
-    for s, v in config[f"samples"].items():
+    for s, v in config["samples"].items():
         for i, v2 in enumerate(v["data"], 1):
             reads[str(s)][f"run{i}"] = {
                 k: resolve_path(v3, workdir) for k, v3 in dict(v2).items()

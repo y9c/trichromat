@@ -7,10 +7,15 @@ path:
   hisat3nbuild: /pipeline/hisat2-hisat-3n/hisat-3n-build
   umicollapse: java -server -Xms8G -Xmx36G -Xss100M -jar /pipeline/UMICollapse/umicollapse.jar bam
   markduplicates: java -server -Xms8G -Xmx36G -Xss100M -jar /pipeline/gatk-4.2.5.0/gatk-package-4.2.5.0-local.jar MarkDuplicates
+  pb: ./bin/pb
+  joinPileup: python ./bin/join_pileup.py
+  filterSites: python ./bin/filter_sites.py
 
 # m6A method, use A to G mutation
+# m5C method, use C to T mutation
 base_change: 'A,G'
 
+### For mapping
 # can be "ECLIP10", "ECLIP6", "TAKARAV3", "SACSEQV3", "STRANDED"
 libtype: ECLIP6
 # with umi in the library or not
@@ -21,6 +26,10 @@ markdup: true
 # by default, the pipeline will use the strandness information from the library
 # if the strandness is not available, set the strandness to `false`
 strandness: true
-
+# whether map to the reverse strand of genes or not
 gene_norc: true
+# whether the genome transcripts contains introns or not
 splice_genome: true
+
+### For site calling
+motif_flanking: 2

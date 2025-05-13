@@ -1,13 +1,4 @@
-from collections import defaultdict
-from snakemake.utils import validate
-from workflow_utils import preprocess_config
-
-
-configfile: "default.yaml"
-
-
-validate(config, "config.schema.yaml")
-
+# mapping workflow
 
 TEMPDIR = Path(
     os.path.relpath(
@@ -15,20 +6,6 @@ TEMPDIR = Path(
     )
 )
 INTERNALDIR = Path("internal_files")
-
-
-if workflow._workdir_handler is not None:
-    WORKDIR = workflow._workdir_handler.workdir
-else:
-    WORKDIR = os.path.relpath(
-        config.get("workdir", "workspace"), os.path.dirname(workflow.configfiles[-1])
-    )
-
-    workdir: WORKDIR
-
-
-preprocess_config(config, WORKDIR)
-
 
 PATH = config["path"]
 
@@ -50,19 +27,19 @@ REF = config.get("_REF", {})
 READS = config.get("_READS", {})
 
 
-rule all:
-    input:
-        expand("report_reads/unmap/{sample}.count", sample=READS.keys()),
-        expand(
-            "report_reads/combined/{sample}.{reftype}.count",
-            sample=READS.keys(),
-            reftype=REF.keys(),
-        ),
-        expand(
-            "report_reads/dedup/{sample}.{reftype}.count",
-            sample=READS.keys(),
-            reftype=REF.keys(),
-        ),
+# rule all:
+#     input:
+#         expand("report_reads/unmap/{sample}.count", sample=READS.keys()),
+#         expand(
+#             "report_reads/combined/{sample}.{reftype}.count",
+#             sample=READS.keys(),
+#             reftype=REF.keys(),
+#         ),
+#         expand(
+#             "report_reads/dedup/{sample}.{reftype}.count",
+#             sample=READS.keys(),
+#             reftype=REF.keys(),
+#         ),
 
 
 rule cutadapt_SE:
@@ -576,15 +553,28 @@ rule drop_duplicates:
             )
 
 
-rule stat_dedup:
+rule write_bam_index:
     input:
         INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
+    output:
+        INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam.bai",
+    threads: 4
+    shell:
+        """
+        {config[path][samtools]} index -@ {threads} -b {input} {output}
+        """
+
+
+rule stat_dedup:
+    input:
+        bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
+        bai=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam.bai",
     output:
         stat="report_reads/dedup/{sample}.{reftype}.txt",
         n="report_reads/dedup/{sample}.{reftype}.count",
     threads: 2
     shell:
         """
-        {config[path][samtools]} flagstat -@ {threads} -O TSV {input} > {output.stat}
-        {config[path][samtools]} view -@ {threads} -c -F 384 {input} > {output.n}
+        {config[path][samtools]} flagstat -@ {threads} -O TSV {input.bam} > {output.stat}
+        {config[path][samtools]} view -@ {threads} -c -F 384 {input.bam} > {output.n}
         """
