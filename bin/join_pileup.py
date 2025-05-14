@@ -11,22 +11,11 @@ from itertools import chain
 import polars as pl
 
 
-def read_file_and_rename(file, name):
-    df = pl.scan_csv(
-        file,
-        separator="\t",
-        schema_overrides={
-            "ref": pl.Utf8,
-            "pos": pl.Int64,
-            "strand": pl.Utf8,
-            "motif": pl.Utf8,
-            "converted": pl.Int64,
-            "unconverted": pl.Int64,
-        },
-    ).select(
-        "ref",
+def read_file_and_rename(file, name, strand):
+    df = pl.scan_ipc(file).select(
+        "chrom",
         "pos",
-        "strand",
+        pl.lit(strand).alias("strand"),
         "motif",
         pl.lit(name).alias("name"),
         pl.col("unconverted").alias(f"Uncon"),
@@ -35,17 +24,17 @@ def read_file_and_rename(file, name):
     return df
 
 
-def join_table_by_site(files, names):
+def join_table_by_site(files, names, strands):
     dfs = []
-    for file, name in zip(files, names):
-        dfs.append(read_file_and_rename(file, name))
+    for file, name, strand in zip(files, names, strands):
+        dfs.append(read_file_and_rename(file, name, strand))
 
     df = (
         pl.concat(dfs)
-        .group_by("ref", "pos", "strand", "motif", maintain_order=True)
+        .group_by("chrom", "pos", "strand", "motif", maintain_order=True)
         .agg(
             pl.col(group).filter(pl.col("name") == name).sum().alias(f"{group}_{name}")
-            for name in names
+            for name in dict.fromkeys(names)
             for group in ["Uncon", "Depth"]
         )
     )
@@ -62,11 +51,14 @@ if __name__ == "__main__":
     arg.add_argument(
         "-n", "--names", type=str, nargs="+", help="input names", required=True
     )
+    arg.add_argument(
+        "-s", "--strands", type=str, nargs="+", help="input strands", required=True
+    )
     arg.add_argument("-o", "--output", type=str, help="output file", required=True)
     args = arg.parse_args()
     # check if files and names are same length
     if len(args.files) != len(args.names):
         raise ValueError("files and names must be same length")
 
-    df = join_table_by_site(args.files, args.names)
+    df = join_table_by_site(args.files, args.names, args.strands)
     df.sink_ipc(args.output, compression="lz4")

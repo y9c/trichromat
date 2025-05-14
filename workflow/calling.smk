@@ -81,7 +81,7 @@ rule pileup_by_fwd_strand:
             else INTERNALDIR / f"reference_file/{wildcards.reftype}.fa.fai"
         ),
     output:
-        temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.fwd.tsv.gz"),
+        temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.fwd.tsv"),
     params:
         ref_base=BASE_CHANGE.split(",")[0],
         ref_col={"A": 5, "C": 6, "G": 7, "T": 8}[BASE_CHANGE.split(",")[0]],
@@ -97,8 +97,7 @@ rule pileup_by_fwd_strand:
     shell:
         """
         {PATH[pb]} -t {threads} --mate-fix --max-depth 500000 -k {params.motif_flanking} --pile-expression 'return string.upper(string.sub(pile.ref_base,{params.motif_center},{params.motif_center}))=="{params.ref_base}"' --fasta {input.fa} -e 'return read.bq>20 and read.strand==1 and read:tag("XM") * 20 <= read.length {params.drop_clustered}' {input.bam} |\
-            awk -v OFS="\\t" 'NR>1 && ${params.alt_col}+${params.ref_col}>0 {{print $1,$2+1,"+",$3,${params.alt_col},${params.ref_col}}}' | \
-            gzip > {output}
+            awk -v OFS="\\t" 'NR>1 && ${params.alt_col}+${params.ref_col}>0 {{print $1,$2+1,$3,${params.alt_col},${params.ref_col}}}' > {output}
         """
 
 
@@ -117,7 +116,7 @@ rule pileup_by_rev_strand:
             else REF["genome"][0] + ".fai"
         ),
     output:
-        temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.rev.tsv.gz"),
+        temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.rev.tsv"),
     params:
         ref_base={"A": "T", "C": "G", "G": "C", "T": "A"}[BASE_CHANGE.split(",")[0]],
         # a c g t
@@ -137,39 +136,38 @@ rule pileup_by_rev_strand:
     shell:
         """
         {PATH[pb]} -t {threads} --mate-fix --max-depth 500000 -k {params.motif_flanking} --pile-expression 'return string.upper(string.sub(pile.ref_base,{params.motif_center},{params.motif_center}))=="{params.ref_base}"' --fasta {input.fa} -e 'return read.bq>20 and read.strand==-1 and read:tag("XM") * 20 <= read.length {params.drop_clustered}' {input.bam} |\
-            awk -v OFS="\\t" 'NR>1 && ${params.alt_col}+${params.ref_col}>0 {{print $1,$2+1,"-",$3,${params.alt_col},${params.ref_col}}}' | \
-            gzip > {output}
+            awk -v OFS="\\t" 'NR>1 && ${params.alt_col}+${params.ref_col}>0 {{print $1,$2+1,$3,${params.alt_col},${params.ref_col}}}' > {output}
         """
 
 
-rule join_pileup_strands:
+rule pileup_to_arrow:
     input:
-        expand(
-            TEMPDIR / "pileup_by_strand/{{sample}}.{{reftype}}.{strand}.tsv.gz",
-            strand=["fwd", "rev"],
-        ),
+        TEMPDIR / "pileup_by_strand/{sample}.{reftype}.{strand}.tsv",
     output:
-        "report_sites/pileup/{sample}.{reftype}.tsv.gz",
+        INTERNALDIR / "pileup_arrow/{sample}.{reftype}.{strand}.arrow",
+    threads: 2
     shell:
         """
-        (echo -e "ref\tpos\tstrand\tmotif\tconverted\tunconverted" | gzip; cat {input} ) > {output}
+        {PATH[convertPileup]} {input} {output}
         """
 
 
 rule join_pileup_table:
     input:
         expand(
-            "report_sites/pileup/{sample}.{{reftype}}.tsv.gz",
+            INTERNALDIR / "pileup_arrow/{sample}.{{reftype}}.{strand}.arrow",
             sample=READS.keys(),
+            strand=["fwd", "rev"],
         ),
     output:
         "report_sites/joined/{reftype}.arrow",
     params:
-        names=list(READS.keys()),
+        names=[name for name in READS.keys() for _ in range(2)],
+        strand=["+", "-"] * len(READS.keys()),
     threads: 8
     shell:
         """
-        {PATH[joinPileup]} -f {input} -n {params.names} -o {output}
+        {PATH[joinPileup]} -f {input} -n {params.names} -s {params.strand} -o {output}
         """
 
 
