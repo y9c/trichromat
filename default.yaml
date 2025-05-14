@@ -33,7 +33,10 @@ gene_norc: true
 splice_genome: true
 
 ### For site calling
+# number of flanking bases to be used for the motif
 motif_flanking: 2
+# remove "clustered reads", which are not converted properly
+drop_clustered: true
 
 cutoff:
   min_uncon: 1
