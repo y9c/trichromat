@@ -27,6 +27,7 @@ path:
   umicollapse: java -server -Xms8G -Xmx36G -Xss100M -jar ~/tools/UMICollapse/umicollapse.jar bam
   markduplicates: java -Xms8G -Xmx36G -Xss100M -jar ~/tools/gatk-4.2.6.1/gatk-package-4.2.6.1-local.jar MarkDuplicates
   pb: ../../bin/pb
+  collectReadCounts: python ../../bin/collect_read_counts.py
   joinPileup: python ../../bin/join_pileup.py
   filterSites: python ../../bin/filter_sites.py
 

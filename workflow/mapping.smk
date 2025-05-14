@@ -48,7 +48,7 @@ rule cutadapt_SE:
     output:
         c=temp(TEMPDIR / "trimmed_reads/SE/{sample}_{rn}_R1.fq.gz"),
         s=INTERNALDIR / "discarded_reads/{sample}_{rn}_tooshort_R1.fq.gz",
-        report="report_reads/trimming/{sample}_{rn}.json",
+        report=temp(TEMPDIR / "trimmed_reads/SE/{sample}_{rn}.json"),
     params:
         library=LIBTYPE,
     threads: 16
@@ -71,13 +71,28 @@ rule cutadapt_PE:
             INTERNALDIR / "discarded_reads/{sample}_{rn}_tooshort_R1.fq.gz",
             INTERNALDIR / "discarded_reads/{sample}_{rn}_tooshort_R2.fq.gz",
         ],
-        report="report_reads/trimming/{sample}_{rn}.json",
+        report=temp(TEMPDIR / "trimmed_reads/PE/{sample}_{rn}.json"),
     params:
         library=LIBTYPE,
     threads: 16
     shell:
         """
         {config[path][cutseq]} -t {threads} -A {params.library:q} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
+        """
+
+
+rule move_cutadapt_report:
+    input:
+        lambda wildcards: (
+            TEMPDIR / "trimmed_reads/PE/{sample}_{rn}.json"
+            if len(READS[wildcards.sample][wildcards.rn]) == 2
+            else TEMPDIR / "trimmed_reads/SE/{sample}_{rn}.json"
+        ),
+    output:
+        "report_reads/trimming/{sample}_{rn}.json",
+    shell:
+        """
+        mv {input} {output}
         """
 
 
@@ -577,4 +592,30 @@ rule stat_dedup:
         """
         {config[path][samtools]} flagstat -@ {threads} -O TSV {input.bam} > {output.stat}
         {config[path][samtools]} view -@ {threads} -c -F 384 {input.bam} > {output.n}
+        """
+
+
+rule collect_read_counts:
+    input:
+        trimming=[
+            f"report_reads/trimming/{sample}_{rn}.json"
+            for sample, rs in READS.items()
+            for rn in rs
+        ],
+        unmap=expand("report_reads/unmap/{sample}.count", sample=READS.keys()),
+        combined=expand(
+            "report_reads/combined/{sample}.{reftype}.count",
+            sample=READS.keys(),
+            reftype=REF.keys(),
+        ),
+        dedup=expand(
+            "report_reads/dedup/{sample}.{reftype}.count",
+            sample=READS.keys(),
+            reftype=REF.keys(),
+        ),
+    output:
+        "report_reads/read_counts_summary.tsv",
+    shell:
+        """
+        {config[path][collectReadCounts]} --trimming {input.trimming} --unmap {input.unmap} --combined {input.combined} --dedup {input.dedup} --output-name {output}
         """
