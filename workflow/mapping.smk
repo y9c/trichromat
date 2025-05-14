@@ -524,24 +524,33 @@ rule stat_combined:
         """
 
 
+# rule drop_duplicates_not_working:
+#     input:
+#         bam=TEMPDIR / "combined_runs/{sample}.{reftype}.bam",
+#     output:
+#         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
+#         txt="report_reads/dedup/{sample}.{reftype}.log",
+#     params:
+#         umi="--barcode-rgx '.*_([!-?A-~]+)'",
+#         markdup=MARKDUP,
+#     threads: 16
+#      shell:
+#          """
+#          if [[ "{params.markdup}" == "True" ]]; then
+#              {config[path][samtools]} markdup -@ {threads} -c -S -l 600 --mode t -t --include-fails --duplicate-count --write-index {params.umi} -f {output.txt} {input} {output.bam}
+#          else
+#              cp {input.bam} {output.bam} && touch {output.txt}
+#          fi
+#          """
+
+
 rule drop_duplicates:
     input:
         bam=TEMPDIR / "combined_runs/{sample}.{reftype}.bam",
     output:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
         txt="report_reads/dedup/{sample}.{reftype}.log",
-    # params:
-    #     umi="--barcode-rgx '.*_([!-?A-~]+)'",
-    #     markdup=MARKDUP,
     threads: 16
-    #  shell:
-    #      """
-    #      if [[ "{params.markdup}" == "True" ]]; then
-    #          {config[path][samtools]} markdup -@ {threads} -c -S -l 600 --mode t -t --include-fails --duplicate-count --write-index {params.umi} -f {output.txt} {input} {output.bam}
-    #      else
-    #          cp {input.bam} {output.bam} && touch {output.txt}
-    #      fi
-    #      """
     run:
         if WITH_UMI:
             shell(
