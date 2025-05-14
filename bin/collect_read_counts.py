@@ -140,12 +140,12 @@ def main():
             s_name = get_sample_name(fp, "trimming_json")
             counts = parse_trimming_json(fp)
             if counts["raw"] is not None:
-                results[s_name]["Trimming_Raw_Reads"] = (
-                    results[s_name].get("Trimming_Raw_Reads", 0) or 0
+                results[s_name]["Raw_Reads"] = (
+                    results[s_name].get("Raw_Reads", 0) or 0
                 ) + counts["raw"]
             if counts["clean"] is not None:
-                results[s_name]["Trimming_Clean_Reads"] = (
-                    results[s_name].get("Trimming_Clean_Reads", 0) or 0
+                results[s_name]["Clean_Reads"] = (
+                    results[s_name].get("Clean_Reads", 0) or 0
                 ) + counts["clean"]
 
     # --- Process Unmap ---
@@ -163,7 +163,7 @@ def main():
                 file_type = type_match.group(1)  # genome, genes, or contamination
                 s_name_context = f"combined_{file_type}_count"
                 s_name = get_sample_name(fp, s_name_context)
-                metric_name = f"Mapped_Combined_{file_type.capitalize()}_Reads"
+                metric_name = f"Mapped_{file_type.capitalize()}_Reads"
                 results[s_name][metric_name] = parse_simple_count_file(fp)
             else:
                 print(
@@ -201,15 +201,15 @@ def main():
         all_metrics.update(data.keys())
 
     final_preferred_order = [
-        "Trimming_Raw_Reads",
-        "Trimming_Clean_Reads",
+        "Raw_Reads",
+        "Clean_Reads",
         "Unmap_Reads",
-        "Mapped_Combined_Genome_Reads",
-        "Mapped_Combined_Genes_Reads",
-        "Mapped_Combined_Contamination_Reads",
-        "Dedup_Genome_Reads",
-        "Dedup_Genes_Reads",
+        "Mapped_Contamination_Reads",
+        "Mapped_Genes_Reads",
+        "Mapped_Genome_Reads",
         "Dedup_Contamination_Reads",
+        "Dedup_Genes_Reads",
+        "Dedup_Genome_Reads",
     ]
 
     current_header_metrics = [m for m in final_preferred_order if m in all_metrics]
