@@ -96,7 +96,7 @@ rule pileup_by_fwd_strand:
     threads: 16
     shell:
         """
-        {PATH[pb]} -t {threads} --mate-fix --max-depth 500000 -k {params.motif_flanking} --pile-expression 'return string.upper(string.sub(pile.ref_base,{params.motif_center},{params.motif_center}))=="{params.ref_base}"' --fasta {input.fa} -e 'return read.bq>20 and read.strand==1 and read:tag("XM") * 20 <= read.length and {params.drop_clustered}' {input.bam} |\
+        {PATH[pb]} -t {threads} --mate-fix --max-depth 500000 -k {params.motif_flanking} --pile-expression 'return string.upper(string.sub(pile.ref_base,{params.motif_center},{params.motif_center}))=="{params.ref_base}"' --fasta {input.fa} -e 'return read.bq>20 and read.strand==1 and read:tag("XM") * 20 <= read.length {params.drop_clustered}' {input.bam} |\
             awk -v OFS="\\t" 'NR>1 && ${params.alt_col}+${params.ref_col}>0 {{print $1,$2+1,"+",$3,${params.alt_col},${params.ref_col}}}' | \
             gzip > {output}
         """
