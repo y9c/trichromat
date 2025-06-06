@@ -33,6 +33,18 @@ _🧬 A general pipeline for data processing of 3 letter sequencing methods._
   - Built for speed.
   - Parameterized for efficiency.
 
+## Dependencies
+
+- [cutseq](https://github.com/y9c/cutseq)
+- [samtools](https://github.com/samtools/samtools)
+- [hisat3n](https://github.com/DaehwanKimLab/hisat2/tree/hisat-3n)
+- [umicollapse](https://github.com/Daniel-Liu-c0deb0t/UMICollapse)
+- [markduplicates](https://gatk.broadinstitute.org/hc/en-us/articles/360037052812-MarkDuplicates-Picard)
+- [pbr](https://github.com/y9c/pbr)
+- python: 3.10+ (and dependencies below)
+  - scipy: 1.12.0+
+  - polar: 1.30.0+
+
 ---
 
 &nbsp;
