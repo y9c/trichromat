@@ -1,5 +1,5 @@
 # config.schema.yaml
-$schema: 'http://json-schema.org/draft-06/schema#'
+$schema: "https://json-schema.org/draft/2020-12/schema"
 description: 'Schema for validating the project-specific Snakemake configuration YAML file.'
 type: object
 
