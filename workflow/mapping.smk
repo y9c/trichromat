@@ -10,15 +10,13 @@ INTERNALDIR = Path("internal_files")
 PATH = config["path"]
 
 LIBTYPE = config["libtype"]
+
 WITH_UMI = config.get(
     "with_umi",
     LIBTYPE in ["INLINE", "ECLIP6", "ECLIP10", "TAKARAV3", "SACSEQ", "SACSEQV3"],
 )
 MARKDUP = config.get("markdup", True)
-# force markdup to be true for UMI
-# if WITH_UMI:
-#     MARKDUP = True
-STRANDNESS = config.get("strandness", True)
+STRANDNESS = config.get("strandness", LIBTYPE not in ["UNSTRANDED"])
 GENE_NORC = config.get("gene_norc", True)
 BASE_CHANGE = config.get("base_change", "A,G")
 SPLICE_GENOME = config.get("splice_genome", True)
@@ -550,30 +548,48 @@ rule drop_duplicates:
     output:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
         txt="report_reads/dedup/{sample}.{reftype}.log",
+    params:
+        collapse_paired=lambda wildcards: (
+            "--paired --remove-unpaired"
+            if max(len(rd) for rn, rd in SAMPLE2DATA[wildcards.sample].items()) == 2
+            else ""
+        ),
+        flowmode_single=lambda wildcards: (
+            "--FLOW_MODE true --FLOW_USE_END_IN_UNPAIRED_READS true --FLOW_USE_UNPAIRED_CLIPPED_END false"
+            if max(len(rd) for rn, rd in SAMPLE2DATA[wildcards.sample].items()) == 1
+            else ""
+        ),
     threads: 16
     run:
         if WITH_UMI:
             shell(
                 """
-            {config[path][umicollapse]} \
-                -t 2 -T {threads} --data naive --merge avgqual --two-pass -i {input.bam} -o {output.bam} >{output.txt}
-            """
+                {config[path][umicollapse]} \
+                    -t {params.t1} -T {params.t2} {params.collapse_paired} --remove-chimeric --data naive --merge avgqual --two-pass \
+                    -i {input.bam} -o {output.bam} >{output.txt}
+                """
             )
         elif MARKDUP:
             shell(
                 """
-            {config[path][markduplicates]} \
-                --TMP_DIR $TMPDIR \
-                --DUPLICATE_SCORING_STRATEGY SUM_OF_BASE_QUALITIES --REMOVE_DUPLICATES true --VALIDATION_STRINGENCY SILENT \
+                INTER_BAM=${{SLURM_TMPDIR:-${{TMPDIR:-/tmp}}}}/{wildcards.sample}.{wildcards.reftype}.bam 
+                {PATH[addorreplacereadgroups]} \
+                    --RGID {wildcards.sample} --RGLB LIB --RGPL ILLUMINA --RGPU LANE --RGSM {wildcards.sample} --VALIDATION_STRINGENCY SILENT \
+                    --INPUT {input.bam} --OUTPUT ${{INTER_BAM}}
+                {config[path][markduplicates]} \
+                    --DUPLICATE_SCORING_STRATEGY SUM_OF_BASE_QUALITIES --REMOVE_DUPLICATES true --VALIDATION_STRINGENCY SILENT --TAG_DUPLICATE_SET_MEMBERS true --ADD_PG_TAG_TO_READS false {params.flowmode_single} \
+                    --TMP_DIR ${{SLURM_TMPDIR:-${{TMPDIR:-/tmp}}}} \
+                    --INPUT ${{INTER_BAM}} --OUTPUT {output.bam} --METRICS_FILE {output.txt}
                 -I {input} -O {output.bam} -M {output.txt} \
-            """
+                rm ${{INTER_BAM}}
+                """
             )
         else:
             shell(
                 """
                 cp {input.bam} {output.bam}
                 touch {output.txt}
-            """
+                """
             )
 
 
