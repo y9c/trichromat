@@ -551,12 +551,12 @@ rule drop_duplicates:
     params:
         collapse_paired=lambda wildcards: (
             "--paired --remove-unpaired"
-            if max(len(rd) for rn, rd in SAMPLE2DATA[wildcards.sample].items()) == 2
+            if max(len(rd) for rn, rd in READS[wildcards.sample].items()) == 2
             else ""
         ),
         flowmode_single=lambda wildcards: (
             "--FLOW_MODE true --FLOW_USE_END_IN_UNPAIRED_READS true --FLOW_USE_UNPAIRED_CLIPPED_END false"
-            if max(len(rd) for rn, rd in SAMPLE2DATA[wildcards.sample].items()) == 1
+            if max(len(rd) for rn, rd in READS[wildcards.sample].items()) == 1
             else ""
         ),
     threads: 16
