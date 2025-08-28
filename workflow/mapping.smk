@@ -573,14 +573,13 @@ rule drop_duplicates:
             shell(
                 """
                 INTER_BAM=${{SLURM_TMPDIR:-${{TMPDIR:-/tmp}}}}/{wildcards.sample}.{wildcards.reftype}.bam 
-                {PATH[addorreplacereadgroups]} \
+                {config[path][picard]} AddOrReplaceReadGroups \
                     --RGID {wildcards.sample} --RGLB LIB --RGPL ILLUMINA --RGPU LANE --RGSM {wildcards.sample} --VALIDATION_STRINGENCY SILENT \
                     --INPUT {input.bam} --OUTPUT ${{INTER_BAM}}
-                {config[path][markduplicates]} \
+                {config[path][picard]} MarkDuplicates \
                     --DUPLICATE_SCORING_STRATEGY SUM_OF_BASE_QUALITIES --REMOVE_DUPLICATES true --VALIDATION_STRINGENCY SILENT --TAG_DUPLICATE_SET_MEMBERS true --ADD_PG_TAG_TO_READS false {params.flowmode_single} \
                     --TMP_DIR ${{SLURM_TMPDIR:-${{TMPDIR:-/tmp}}}} \
                     --INPUT ${{INTER_BAM}} --OUTPUT {output.bam} --METRICS_FILE {output.txt}
-                -I {input} -O {output.bam} -M {output.txt} \
                 rm ${{INTER_BAM}}
                 """
             )
