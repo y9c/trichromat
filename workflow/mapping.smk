@@ -545,6 +545,7 @@ rule stat_combined:
 rule drop_duplicates:
     input:
         bam=TEMPDIR / "combined_runs/{sample}.{reftype}.bam",
+        bai=TEMPDIR / "combined_runs/{sample}.{reftype}.bam.bai",
     output:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
         txt="report_reads/dedup/{sample}.{reftype}.log",
