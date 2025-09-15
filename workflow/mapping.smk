@@ -566,7 +566,7 @@ rule drop_duplicates:
             shell(
                 """
                 {config[path][umicollapse]} \
-                    --remove-chimeric --data naive --merge avgqual --two-pass \
+                    -T {threads}--remove-chimeric --data naive --merge avgqual \
                     -i {input.bam} -o {output.bam} >{output.txt}
                 """
             )
