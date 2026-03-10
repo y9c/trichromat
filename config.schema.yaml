@@ -72,8 +72,8 @@ properties:
           type: string
         minItems: 1 # Expect at least one gene reference file if the 'genes' key is present.
     required:
-      - contamination
       - genes
+      - genome
   samples:
     type: object
     description: "Defines the input samples and their associated sequencing data files. Each key under 'samples' is a unique sample identifier."
