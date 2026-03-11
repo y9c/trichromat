@@ -560,12 +560,14 @@ rule drop_duplicates:
             if max(len(rd) for rn, rd in READS[wildcards.sample].items()) == 1
             else ""
         ),
+        java_tmp=TEMPDIR,
     threads: 16
     run:
         if WITH_UMI:
             shell(
                 """
-                {config[path][umicollapse]} \
+                mkdir -p {params.java_tmp}
+                {config[path][umicollapse]} -Djava.io.tmpdir={params.java_tmp} \
                     -T {threads} --remove-chimeric --data naive --merge avgqual \
                     -i {input.bam} -o {output.bam} >{output.txt}
                 """
@@ -573,13 +575,14 @@ rule drop_duplicates:
         elif MARKDUP:
             shell(
                 """
-                INTER_BAM=${{SLURM_TMPDIR:-${{TMPDIR:-/tmp}}}}/{wildcards.sample}.{wildcards.reftype}.bam 
-                {config[path][picard]} AddOrReplaceReadGroups \
+                mkdir -p {params.java_tmp}
+                INTER_BAM={params.java_tmp}/{wildcards.sample}.{wildcards.reftype}.bam 
+                {config[path][picard]} -Djava.io.tmpdir={params.java_tmp} AddOrReplaceReadGroups \
                     --RGID {wildcards.sample} --RGLB LIB --RGPL ILLUMINA --RGPU LANE --RGSM {wildcards.sample} --VALIDATION_STRINGENCY SILENT \
                     --INPUT {input.bam} --OUTPUT ${{INTER_BAM}}
-                {config[path][picard]} MarkDuplicates \
+                {config[path][picard]} -Djava.io.tmpdir={params.java_tmp} MarkDuplicates \
                     --DUPLICATE_SCORING_STRATEGY SUM_OF_BASE_QUALITIES --REMOVE_DUPLICATES true --VALIDATION_STRINGENCY SILENT --TAG_DUPLICATE_SET_MEMBERS true --ADD_PG_TAG_TO_READS false {params.flowmode_single} \
-                    --TMP_DIR ${{SLURM_TMPDIR:-${{TMPDIR:-/tmp}}}} \
+                    --TMP_DIR {params.java_tmp} \
                     --INPUT ${{INTER_BAM}} --OUTPUT {output.bam} --METRICS_FILE {output.txt}
                 rm ${{INTER_BAM}}
                 """
