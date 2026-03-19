@@ -43,16 +43,22 @@ def _preprocess_reference(config, workdir):
 
 def _preprocess_reads(config, workdir):
     reads = defaultdict(lambda: defaultdict(dict))
+    sample2lib = defaultdict(str)
+    sample2adp = defaultdict(str)
     for s, v in config["samples"].items():
+        sample2lib[str(s)] = v.get("libtype", config.get("libtype", ""))
+        sample2adp[str(s)] = v.get("adapter", config.get("adapter", ""))
         for i, v2 in enumerate(v["data"], 1):
             reads[str(s)][f"run{i}"] = {
                 k: resolve_path(v3, workdir) for k, v3 in dict(v2).items()
             }
-    return reads
+    return reads, sample2lib, sample2adp
 
 
 def preprocess_config(config, workdir):
     if "_REF" not in config:
         config["_REF"] = _preprocess_reference(config, workdir)
     if "_READS" not in config:
-        config["_READS"] = _preprocess_reads(config, workdir)
+        config["_READS"], config["_LIB"], config["_ADP"] = _preprocess_reads(
+            config, workdir
+        )

@@ -9,7 +9,7 @@ INTERNALDIR = Path("internal_files")
 
 PATH = config["path"]
 
-LIBTYPE = config["libtype"]
+LIBTYPE = config.get("libtype", "")
 
 WITH_UMI = config.get(
     "with_umi",
@@ -23,6 +23,8 @@ SPLICE_GENOME = config.get("splice_genome", True)
 SPLICE_CONTAM = config.get("splice_contamination", False)
 REF = config.get("_REF", {})
 READS = config.get("_READS", {})
+SAMPLE_LIB = config.get("_LIB", {})
+SAMPLE_ADP = config.get("_ADP", {})
 
 
 # rule all:
@@ -48,11 +50,15 @@ rule cutadapt_SE:
         s=INTERNALDIR / "discarded_reads/{sample}_{rn}_tooshort_R1.fq.gz",
         report=temp(TEMPDIR / "trimmed_reads/SE/{sample}_{rn}.json"),
     params:
-        library=LIBTYPE,
+        cut=lambda wildcards: (
+            f"-A {SAMPLE_LIB[wildcards.sample]:q}"
+            if SAMPLE_LIB[wildcards.sample]
+            else f"-a {SAMPLE_ADP[wildcards.sample]:q}"
+        ),
     threads: 16
     shell:
         """
-        {config[path][cutseq]} -t {threads} -A {params.library:q} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
+        {config[path][cutseq]} -t {threads} {params.cut} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
         """
 
 
@@ -71,11 +77,15 @@ rule cutadapt_PE:
         ],
         report=temp(TEMPDIR / "trimmed_reads/PE/{sample}_{rn}.json"),
     params:
-        library=LIBTYPE,
+        cut=lambda wildcards: (
+            f"-A {SAMPLE_LIB[wildcards.sample]:q}"
+            if SAMPLE_LIB[wildcards.sample]
+            else f"-a {SAMPLE_ADP[wildcards.sample]:q}"
+        ),
     threads: 16
     shell:
         """
-        {config[path][cutseq]} -t {threads} -A {params.library:q} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
+        {config[path][cutseq]} -t {threads} {params.cut} -m 20 --auto-rc -o {output.c} -s {output.s} --json-file {output.report} {input} 
         """
 
 

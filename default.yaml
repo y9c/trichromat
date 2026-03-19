@@ -19,7 +19,7 @@ base_change: 'A,G'
 
 ### For mapping
 # can be "ECLIP10", "ECLIP6", "TAKARAV3", "SACSEQV3", "STRANDED"
-libtype: ECLIP6
+# libtype: ECLIP6
 # with umi in the library or not
 with_umi: true
 # by default, the pipeline will force remove the PCR duplicates based on the UMI

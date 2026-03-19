@@ -11,6 +11,9 @@ properties:
   libtype:
     type: string
     description: 'The library preparation type.'
+  adapter:
+    type: string
+    description: 'The adapter sequence to be trimmed.'
   base_change:
     type: string
     description: "Specifies base changes of interest, e.g., 'A,G'. Important for specific variant-aware analyses or RNA editing studies."
@@ -83,6 +86,12 @@ properties:
       type: object
       description: 'Schema for an individual sample entry.'
       properties:
+        libtype:
+          type: string
+          description: 'The library preparation type for this sample.'
+        adapter:
+          type: string
+          description: 'The adapter sequence for this sample.'
         data:
           type: array
           description: 'A list of read sets for the sample. Each item in the array represents a set of FASTQ files (e.g., from a single lane or technical replicates to be processed together).'
@@ -109,7 +118,6 @@ properties:
 
 # List of top-level keys that MUST be present in the configuration file.
 required:
-  - libtype
   - base_change
   - markdup
   - strandness
