@@ -92,6 +92,18 @@ properties:
         adapter:
           type: string
           description: 'The adapter sequence for this sample.'
+        with_umi:
+          type: boolean
+          description: 'If true, indicates that the sample has UMIs.'
+        strandness:
+          type: boolean
+          description: 'If true, indicates that the sample is strand-specific.'
+        markdup:
+          type: boolean
+          description: 'If true, PCR duplicates will be marked for this sample.'
+        gene_norc:
+          type: boolean
+          description: 'If true, applies specific logic for gene counting for this sample.'
         data:
           type: array
           description: 'A list of read sets for the sample. Each item in the array represents a set of FASTQ files (e.g., from a single lane or technical replicates to be processed together).'

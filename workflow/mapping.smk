@@ -11,13 +11,7 @@ PATH = config["path"]
 
 LIBTYPE = config.get("libtype", "")
 
-WITH_UMI = config.get(
-    "with_umi",
-    LIBTYPE in ["INLINE", "ECLIP6", "ECLIP10", "TAKARAV3", "SACSEQ", "SACSEQV3"],
-)
 MARKDUP = config.get("markdup", True)
-STRANDNESS = config.get("strandness", LIBTYPE not in ["UNSTRANDED"])
-GENE_NORC = config.get("gene_norc", True)
 BASE_CHANGE = config.get("base_change", "A,G")
 SPLICE_GENOME = config.get("splice_genome", True)
 SPLICE_CONTAM = config.get("splice_contamination", False)
@@ -25,6 +19,10 @@ REF = config.get("_REF", {})
 READS = config.get("_READS", {})
 SAMPLE_LIB = config.get("_LIB", {})
 SAMPLE_ADP = config.get("_ADP", {})
+SAMPLE_UMI = config.get("_UMI", {})
+SAMPLE_STD = config.get("_STD", {})
+SAMPLE_DUP = config.get("_DUP", {})
+SAMPLE_NORC = config.get("_NORC", {})
 
 
 # rule all:
@@ -149,7 +147,7 @@ rule hisat2_3n_mapping_contamination_SE:
     params:
         index=str(INTERNALDIR / "reference_file/contamination"),
         directional=lambda wildcards: (
-            "" if LIBTYPE == "UNSTRANDED" else "--directional-mapping"
+            "--directional-mapping" if SAMPLE_STD[wildcards.sample] else ""
         ),
         splice_args=(
             "--pen-noncansplice 20 --min-intronlen 20 --max-intronlen 20"
@@ -180,7 +178,7 @@ rule hisat2_3n_mapping_contamination_PE:
     params:
         index=str(INTERNALDIR / "reference_file/contamination"),
         directional=lambda wildcards: (
-            "" if LIBTYPE == "UNSTRANDED" else "--directional-mapping"
+            "--directional-mapping" if SAMPLE_STD[wildcards.sample] else ""
         ),
         splice_args=(
             "--pen-noncansplice 20 --min-intronlen 20 --max-intronlen 20"
@@ -288,7 +286,9 @@ rule hisat2_3n_mapping_genes_SE:
         summary="report_reads/mapping/{sample}_{rn}.genes.summary",
     params:
         index=INTERNALDIR / "reference_file/genes",
-        directional="--directional-mapping" if STRANDNESS else "",
+        directional=lambda wildcards: (
+            "--directional-mapping" if SAMPLE_STD[wildcards.sample] else ""
+        ),
         base_change=BASE_CHANGE,
     threads: 24
     shell:
@@ -317,7 +317,9 @@ rule hisat2_3n_mapping_genes_PE:
         summary="report_reads/mapping/{sample}_{rn}.genes.summary",
     params:
         index=INTERNALDIR / "reference_file/genes",
-        directional="--directional-mapping" if STRANDNESS else "",
+        directional=lambda wildcards: (
+            "--directional-mapping" if SAMPLE_STD[wildcards.sample] else ""
+        ),
         base_change=BASE_CHANGE,
     threads: 24
     shell:
@@ -339,12 +341,16 @@ rule filter_and_sort_bam_genes:
             "flag.proper_pair && !flag.unmap && !flag.munmap"
             + (
                 " && !flag.read1 != !flag.reverse"
-                if (GENE_NORC and STRANDNESS)
+                if (SAMPLE_NORC[wildcards.sample] and SAMPLE_STD[wildcards.sample])
                 else ""
             )
             if wildcards.mode == "PE"
             else "!flag.unmap"
-            + (" && !flag.reverse" if (GENE_NORC and STRANDNESS) else "")
+            + (
+                " && !flag.reverse"
+                if (SAMPLE_NORC[wildcards.sample] and SAMPLE_STD[wildcards.sample])
+                else ""
+            )
         ),
     threads: 16
     shell:
@@ -391,7 +397,9 @@ rule hisat2_3n_mapping_genome_SE:
         summary="report_reads/mapping/{sample}_{rn}.genome.summary",
     params:
         index=config.get("genome_index"),
-        directional="--directional-mapping" if STRANDNESS else "",
+        directional=lambda wildcards: (
+            "--directional-mapping" if SAMPLE_STD[wildcards.sample] else ""
+        ),
         splice_args=(
             "--pen-noncansplice 20 --min-intronlen 20 --max-intronlen 20"
             if SPLICE_GENOME
@@ -416,7 +424,9 @@ rule hisat2_3n_mapping_genome_PE:
         summary="report_reads/mapping/{sample}_{rn}.genome.summary",
     params:
         index=config.get("genome_index"),
-        directional="--directional-mapping" if STRANDNESS else "",
+        directional=lambda wildcards: (
+            "--directional-mapping" if SAMPLE_STD[wildcards.sample] else ""
+        ),
         splice_args=(
             "--pen-noncansplice 20 --min-intronlen 20 --max-intronlen 20"
             if SPLICE_GENOME
@@ -560,6 +570,8 @@ rule drop_duplicates:
         bam=INTERNALDIR / "aligned_bam/{sample}.{reftype}.bam",
         txt="report_reads/dedup/{sample}.{reftype}.log",
     params:
+        with_umi=lambda wildcards: SAMPLE_UMI[wildcards.sample],
+        markdup=lambda wildcards: SAMPLE_DUP[wildcards.sample],
         collapse_paired=lambda wildcards: (
             "--paired --remove-unpaired"
             if max(len(rd) for rn, rd in READS[wildcards.sample].items()) == 2
@@ -573,16 +585,17 @@ rule drop_duplicates:
         java_tmp=TEMPDIR,
     threads: 16
     run:
-        if WITH_UMI:
+        if params.with_umi:
             shell(
                 """
                 mkdir -p {params.java_tmp}
                 {config[path][umicollapse]} -Djava.io.tmpdir={params.java_tmp} \
                     -T {threads} --remove-chimeric --data naive --merge avgqual \
+                    {params.collapse_paired} \
                     -i {input.bam} -o {output.bam} >{output.txt}
                 """
             )
-        elif MARKDUP:
+        elif params.markdup:
             shell(
                 """
                 mkdir -p {params.java_tmp}
