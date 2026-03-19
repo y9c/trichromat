@@ -1,5 +1,7 @@
 # mapping workflow
 
+import shlex
+
 TEMPDIR = Path(
     os.path.relpath(
         config.get("tempdir", os.path.join(workflow.basedir, ".tmp")), workflow.basedir
@@ -49,9 +51,9 @@ rule cutadapt_SE:
         report=temp(TEMPDIR / "trimmed_reads/SE/{sample}_{rn}.json"),
     params:
         cut=lambda wildcards: (
-            f"-A {SAMPLE_LIB[wildcards.sample]:q}"
+            f"-A {shlex.quote(SAMPLE_LIB[wildcards.sample])}"
             if SAMPLE_LIB[wildcards.sample]
-            else f"-a {SAMPLE_ADP[wildcards.sample]:q}"
+            else f"-a {shlex.quote(SAMPLE_ADP[wildcards.sample])}"
         ),
     threads: 16
     shell:
@@ -76,9 +78,9 @@ rule cutadapt_PE:
         report=temp(TEMPDIR / "trimmed_reads/PE/{sample}_{rn}.json"),
     params:
         cut=lambda wildcards: (
-            f"-A {SAMPLE_LIB[wildcards.sample]:q}"
+            f"-A {shlex.quote(SAMPLE_LIB[wildcards.sample])}"
             if SAMPLE_LIB[wildcards.sample]
-            else f"-a {SAMPLE_ADP[wildcards.sample]:q}"
+            else f"-a {shlex.quote(SAMPLE_ADP[wildcards.sample])}"
         ),
     threads: 16
     shell:
