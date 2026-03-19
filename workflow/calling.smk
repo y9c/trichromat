@@ -8,15 +8,9 @@ INTERNALDIR = Path("internal_files")
 
 PATH = config["path"]
 
-LIBTYPE = config["libtype"]
-WITH_UMI = config.get(
-    "with_umi",
-    LIBTYPE in ["INLINE", "ECLIP6", "ECLIP10", "TAKARAV3", "SACSEQ", "SACSEQV3"],
-)
+LIBTYPE = config.get("libtype", "")
+
 MARKDUP = config.get("markdup", True)
-# force markdup to be true for UMI
-# if WITH_UMI:
-#     MARKDUP = True
 STRANDNESS = config.get("strandness", True)
 GENE_NORC = config.get("gene_norc", True)
 BASE_CHANGE = config.get("base_change", "A,G")
@@ -24,6 +18,12 @@ SPLICE_GENOME = config.get("splice_genome", True)
 SPLICE_CONTAM = config.get("splice_contamination", False)
 REF = config.get("_REF", {})
 READS = config.get("_READS", {})
+SAMPLE_LIB = config.get("_LIB", {})
+SAMPLE_ADP = config.get("_ADP", {})
+SAMPLE_UMI = config.get("_UMI", {})
+SAMPLE_STD = config.get("_STD", {})
+SAMPLE_DUP = config.get("_DUP", {})
+SAMPLE_NORC = config.get("_NORC", {})
 
 MOTIF_FLANKING = config.get("motif_flanking", 2)
 DROP_CLUSTERED = config.get("drop_clustered", True)
