@@ -10,8 +10,9 @@ import sys
 import os
 
 def revcomp(seq):
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N', 'a': 't', 'c': 'g', 'g': 'c', 't': 'a', 'n': 'n'}
-    return "".join(complement.get(base, base) for base in reversed(seq))
+    # str.translate is much faster for complementation
+    trans = str.maketrans("ACGTNacgtn", "TGCANtgcan")
+    return seq.translate(trans)[::-1]
 
 class FastaIndex:
     def __init__(self, fasta_file):
@@ -37,17 +38,36 @@ class FastaIndex:
         
         length, offset, linebases, linewidth = self.index[chrom]
         
-        seq = []
-        for p in range(start, end + 1):
-            if p < 1 or p > length:
-                seq.append("N")
-                continue
-            
-            byte_offset = offset + ((p-1) // linebases) * linewidth + ((p-1) % linebases)
-            self.fasta_file.seek(byte_offset)
-            seq.append(self.fasta_file.read(1))
+        # Clip to chromosome boundaries
+        fetch_start = max(1, start)
+        fetch_end = min(length, end)
         
-        return "".join(seq).upper()
+        if fetch_start > fetch_end:
+            return "N" * (end - start + 1)
+            
+        # Calculate start and end offsets in the file
+        start_line = (fetch_start - 1) // linebases
+        start_col = (fetch_start - 1) % linebases
+        start_offset = offset + start_line * linewidth + start_col
+        
+        end_line = (fetch_end - 1) // linebases
+        end_col = (fetch_end - 1) % linebases
+        end_offset = offset + end_line * linewidth + end_col
+        
+        # Read the range including newlines
+        self.fasta_file.seek(start_offset)
+        raw_seq = self.fasta_file.read(end_offset - start_offset + 1)
+        
+        # Remove newlines and join
+        seq = raw_seq.replace("\n", "").replace("\r", "").upper()
+        
+        # Pad with Ns if we clipped
+        if start < 1:
+            seq = "N" * (1 - start) + seq
+        if end > length:
+            seq = seq + "N" * (end - length)
+            
+        return seq
 
 def main():
     import argparse
