@@ -43,11 +43,7 @@ RUN wget -qO- https://github.com/samtools/samtools/releases/download/${SAMTOOLS_
 WORKDIR /build/hisat2_build
 RUN git clone --depth 1 https://github.com/y9c/HISAT-3N-bighaohao.git . && \
     cmake . && \
-    make -j$(nproc) || make && \
-    ls -l hisat* && \
-    make symlinks_target && \
-    ls -l hisat*
-
+    make -j$(nproc) || make
 # --- Prepare UMICollapse ---
 WORKDIR /build/umicollapse_build
 RUN wget -q -P ./ https://github.com/y9c/UMICollapse/releases/download/latest-prerelease/umicollapse-release.zip && \
@@ -71,7 +67,7 @@ ENV PATH="${APP_VENV_PATH}/bin:${PIPELINE_HOME}/bin:${PIPELINE_HOME}/samtools:${
 
 RUN apt-get update && \
     apt-get -y --no-install-recommends install \
-    ca-certificates tzdata default-jre zlib1g libxml2 libjemalloc2 && \
+    ca-certificates tzdata default-jre zlib1g libxml2 libjemalloc2 libgomp1 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -81,6 +77,9 @@ RUN mkdir -p ${PIPELINE_HOME}/bin \
              ${PIPELINE_HOME}/samtools \
              ${PIPELINE_HOME}/hisat2-hisat-3n \
              ${APP_VENV_PATH}
+
+COPY samtools_wrapper.sh ${PIPELINE_HOME}/bin/samtools
+RUN chmod +x ${PIPELINE_HOME}/bin/samtools
 
 # Copy the application's Python virtual environment
 COPY --from=builder ${APP_VENV_PATH} ${APP_VENV_PATH}
