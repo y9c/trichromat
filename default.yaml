@@ -5,6 +5,7 @@ path:
   addtag: /pipeline/bin/add_tag
   hisat3n: /pipeline/hisat2-hisat-3n/hisat-3n
   hisat3nbuild: /pipeline/hisat2-hisat-3n/hisat-3n-build
+  hisat3ntable: /pipeline/hisat2-hisat-3n/hisat-3n-table
   umicollapse: java -server -XX:InitialRAMPercentage=80.0 -XX:MaxRAMPercentage=80.0 -jar /pipeline/UMICollapse/umicollapse.jar bam
   picard: java -server -XX:InitialRAMPercentage=80.0 -XX:MaxRAMPercentage=80.0 -jar /pipeline/picard/picard.jar
   pb: /pipeline/bin/pbr

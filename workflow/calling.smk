@@ -83,21 +83,18 @@ rule pileup_by_fwd_strand:
     output:
         temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.fwd.tsv"),
     params:
-        ref_base=BASE_CHANGE.split(",")[0],
-        ref_col={"A": 5, "C": 6, "G": 7, "T": 8}[BASE_CHANGE.split(",")[0]],
-        alt_col={"A": 5, "C": 6, "G": 7, "T": 8}[BASE_CHANGE.split(",")[-1]],
-        motif_flanking=MOTIF_FLANKING,
-        motif_center=MOTIF_FLANKING + 1,
+        basechange=BASE_CHANGE,
         drop_clustered=(
-            'and read:tag("Zf")<=3 and 2 * read:tag("Zf") <= read:tag("Yf")'
+            "&& [Zf] <= 3 && 2 * [Zf] <= [Yf]"
             if DROP_CLUSTERED
             else ""
         ),
     threads: 16
     shell:
         """
-        {PATH[pb]} -t {threads} --mate-fix --max-depth 500000 -k {params.motif_flanking} --pile-expression 'return string.upper(string.sub(pile.ref_base,{params.motif_center},{params.motif_center}))=="{params.ref_base}"' --fasta {input.fa} -e 'return read.bq>20 and read.strand==1 and read:tag("XM") * 20 <= read.length {params.drop_clustered}' {input.bam} |\
-            awk -v OFS="\\t" 'NR>1 && ${params.alt_col}+${params.ref_col}>0 {{print $1,$2+1,$3,${params.alt_col},${params.ref_col}}}' > {output}
+        {PATH[samtools]} view -@ {threads} -e "rlen < 100000 && [XM] * 20 <= (qlen-sclen) {params.drop_clustered} && MAPQ >= 20" -h {input.bam} | \
+            {PATH[hisat3ntable]} -p {threads} --alignments - --ref {input.fa} --output-name /dev/stdout --base-change {params.basechange} | \
+            awk '$3 == "+"' | cut -f 1,2,3,5,7 > {output}
         """
 
 
@@ -118,25 +115,18 @@ rule pileup_by_rev_strand:
     output:
         temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.rev.tsv"),
     params:
-        ref_base={"A": "T", "C": "G", "G": "C", "T": "A"}[BASE_CHANGE.split(",")[0]],
-        # a c g t
-        # 5,6,7,8
-        # into
-        # 8,7,6,5
-        ref_col={"A": 8, "C": 7, "G": 6, "T": 5}[BASE_CHANGE.split(",")[0]],
-        alt_col={"A": 8, "C": 7, "G": 6, "T": 5}[BASE_CHANGE.split(",")[-1]],
-        motif_flanking=MOTIF_FLANKING,
-        motif_center=MOTIF_FLANKING + 1,
+        basechange=BASE_CHANGE,
         drop_clustered=(
-            'and read:tag("Zf")<=3 and 2 * read:tag("Zf") <= read:tag("Yf")'
+            "&& [Zf] <= 3 && 2 * [Zf] <= [Yf]"
             if DROP_CLUSTERED
             else ""
         ),
     threads: 16
     shell:
         """
-        {PATH[pb]} -t {threads} --mate-fix --max-depth 500000 -k {params.motif_flanking} --pile-expression 'return string.upper(string.sub(pile.ref_base,{params.motif_center},{params.motif_center}))=="{params.ref_base}"' --fasta {input.fa} -e 'return read.bq>20 and read.strand==-1 and read:tag("XM") * 20 <= read.length {params.drop_clustered}' {input.bam} |\
-            awk -v OFS="\\t" 'NR>1 && ${params.alt_col}+${params.ref_col}>0 {{print $1,$2+1,$3,${params.alt_col},${params.ref_col}}}' > {output}
+        {PATH[samtools]} view -@ {threads} -e "rlen < 100000 && [XM] * 20 <= (qlen-sclen) {params.drop_clustered} && MAPQ >= 20" -h {input.bam} | \
+            {PATH[hisat3ntable]} -p {threads} --alignments - --ref {input.fa} --output-name /dev/stdout --base-change {params.basechange} | \
+            awk '$3 == "-"' | cut -f 1,2,3,5,7 > {output}
         """
 
 
