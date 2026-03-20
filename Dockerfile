@@ -78,9 +78,6 @@ RUN mkdir -p ${PIPELINE_HOME}/bin \
              ${PIPELINE_HOME}/hisat2-hisat-3n \
              ${APP_VENV_PATH}
 
-COPY samtools_wrapper.sh ${PIPELINE_HOME}/bin/samtools
-RUN chmod +x ${PIPELINE_HOME}/bin/samtools
-
 # Copy the application's Python virtual environment
 COPY --from=builder ${APP_VENV_PATH} ${APP_VENV_PATH}
 
