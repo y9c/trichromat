@@ -84,6 +84,7 @@ rule pileup_by_fwd_strand:
         temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.fwd.tsv"),
     params:
         basechange=BASE_CHANGE,
+        motif_flanking=MOTIF_FLANKING,
         drop_clustered=(
             "&& [Zf] <= 3 && 2 * [Zf] <= [Yf]"
             if DROP_CLUSTERED
@@ -94,7 +95,8 @@ rule pileup_by_fwd_strand:
         """
         {PATH[samtools]} view -@ {threads} -e "rlen < 100000 && [XM] * 20 <= (qlen-sclen) {params.drop_clustered} && MAPQ >= 20" -h {input.bam} | \
             {PATH[hisat3ntable]} -p {threads} --alignments - --ref {input.fa} --output-name /dev/stdout --base-change {params.basechange} | \
-            awk '$3 == "+"' | cut -f 1,2,3,5,7 > {output}
+            awk '$3 == "+"' | cut -f 1,2,3,5,7 | \
+            {PATH[annotateMotif]} -r {input.fa} -k {params.motif_flanking} > {output}
         """
 
 
@@ -116,6 +118,7 @@ rule pileup_by_rev_strand:
         temp(TEMPDIR / "pileup_by_strand/{sample}.{reftype}.rev.tsv"),
     params:
         basechange=BASE_CHANGE,
+        motif_flanking=MOTIF_FLANKING,
         drop_clustered=(
             "&& [Zf] <= 3 && 2 * [Zf] <= [Yf]"
             if DROP_CLUSTERED
@@ -126,7 +129,8 @@ rule pileup_by_rev_strand:
         """
         {PATH[samtools]} view -@ {threads} -e "rlen < 100000 && [XM] * 20 <= (qlen-sclen) {params.drop_clustered} && MAPQ >= 20" -h {input.bam} | \
             {PATH[hisat3ntable]} -p {threads} --alignments - --ref {input.fa} --output-name /dev/stdout --base-change {params.basechange} | \
-            awk '$3 == "-"' | cut -f 1,2,3,5,7 > {output}
+            awk '$3 == "-"' | cut -f 1,2,3,5,7 | \
+            {PATH[annotateMotif]} -r {input.fa} -k {params.motif_flanking} > {output}
         """
 
 
