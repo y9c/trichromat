@@ -11,10 +11,6 @@ CAMSEQ_LOG_*.txt
 filter/
 .DS_Store
 
-!test
-test/*
-!test/*.yaml
-
 ######################### R ###########################
 
 # History files
