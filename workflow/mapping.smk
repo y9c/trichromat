@@ -592,7 +592,7 @@ rule drop_duplicates:
                 """
                 mkdir -p {params.java_tmp}
                 {config[path][umicollapse]} -Djava.io.tmpdir={params.java_tmp} \
-                    -T {threads} --remove-chimeric --data naive --merge avgqual \
+                    -T {threads} --remove-chimeric --data bktree --merge avgqual \
                     {params.collapse_paired} \
                     -i {input.bam} -o {output.bam} >{output.txt}
                 """

@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# dedup -- Chromosome-parallel dedup launcher with interactive method selector.
+#
+# Usage:
+#   dedup -i in.bam -o out.bam -m umicollapse-bktree --threads 32
+#   dedup -i in.bam -o out.bam                         # interactive menu
+#
+# Supported methods (passed through to dedup_split.py):
+#   umicollapse-bktree    UMICollapse + BK-tree + two-pass        (recommended)
+#   umicollapse-fenwick   UMICollapse + Fenwick BK-tree + two-pass
+#   umicollapse-naive     UMICollapse + naive (original behaviour)
+#   picard                Picard MarkDuplicates (RNA-safe)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEDUP_SPLIT="${SCRIPT_DIR}/dedup_split.py"
+METHOD=""
+PASSTHROUGH_ARGS=()
+
+# --------------------------------------------------------------------------- #
+#  Parse known -m / --method so we can decide: interactive vs passthrough
+# --------------------------------------------------------------------------- #
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -m|--method)
+            METHOD="$2"
+            PASSTHROUGH_ARGS+=("$1" "$2")
+            shift 2
+            ;;
+        --method=*)
+            METHOD="${1#*=}"
+            PASSTHROUGH_ARGS+=("$1")
+            shift
+            ;;
+        *)
+            PASSTHROUGH_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# --------------------------------------------------------------------------- #
+#  Interactive method selection (only if no -m/--method given)
+# --------------------------------------------------------------------------- #
+if [[ -z "$METHOD" ]]; then
+    # Check if stdin is a terminal – if not (e.g. piped, Snakemake), just
+    # default to umicollapse-bktree instead of hanging.
+    if [[ -t 0 ]]; then
+        echo "Choose dedup method (enter number):"
+        PS3="Method > "
+        select METHOD in \
+            "umicollapse-bktree (recommended: fast, low mem)" \
+            "umicollapse-fenwick (Fenwick BK-tree)" \
+            "umicollapse-naive (original, needs huge heap)" \
+            "picard (MarkDuplicates, RNA-safe)" \
+            "quit"; do
+            case "$REPLY" in
+                1) METHOD="umicollapse-bktree"; break ;;
+                2) METHOD="umicollapse-fenwick"; break ;;
+                3) METHOD="umicollapse-naive"; break ;;
+                4) METHOD="picard"; break ;;
+                5|q|quit) echo "aborted."; exit 0 ;;
+                *) echo "Invalid choice: $REPLY" ;;
+            esac
+        done
+        echo ""
+    else
+        echo "[dedup] non-interactive, defaulting to umicollapse-bktree" >&2
+        METHOD="umicollapse-bktree"
+    fi
+    # Prepend -m and the chosen method to the passthrough args so
+    # dedup_split.py receives it.
+    PASSTHROUGH_ARGS=(-m "$METHOD" "${PASSTHROUGH_ARGS[@]}")
+fi
+
+# --------------------------------------------------------------------------- #
+#  Delegate to dedup_split.py
+# --------------------------------------------------------------------------- #
+exec python3 "$DEDUP_SPLIT" "${PASSTHROUGH_ARGS[@]}"
