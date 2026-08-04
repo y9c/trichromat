@@ -30,7 +30,9 @@ ENV APP_VENV_PATH=/opt/app_venv
 RUN python${PYTHON_VERSION_FOR_APP} -m venv ${APP_VENV_PATH}
 
 # Install Python packages
-ENV PYTHON_PACKAGES="scipy polars cutseq snakemake==9.9.0 pyyaml"
+# polars>=1.43 required: sink_ipc streams join_pileup group_by to disk (~64GB->~19GB)
+# and provides pl.map_batches used by the vectorized binomial p-value in filter_sites.
+ENV PYTHON_PACKAGES="scipy polars>=1.43 cutseq snakemake==9.9.0 pyyaml"
 RUN uv pip install --python ${APP_VENV_PATH}/bin/python --no-cache ${PYTHON_PACKAGES}
 
 # --- Build samtools ---
