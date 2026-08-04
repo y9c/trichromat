@@ -16,12 +16,14 @@ def revcomp(seq):
 
 class FastaIndex:
     def __init__(self, fasta_file):
-        self.fasta_file = open(fasta_file, 'r')
+        self.fasta_file = fasta_file
         self.index = {}
+        self._seq = {}
+        self._fh = None
         fai_file = fasta_file + ".fai"
         if not os.path.exists(fai_file):
             raise FileNotFoundError(f"FASTA index {fai_file} not found.")
-        
+
         with open(fai_file, 'r') as f:
             for line in f:
                 fields = line.strip().split('\t')
@@ -32,42 +34,42 @@ class FastaIndex:
                 linewidth = int(fields[4])
                 self.index[name] = (length, offset, linebases, linewidth)
 
+    def _load(self, chrom):
+        # Read the whole chromosome once (single seek+read) instead of a
+        # per-site seek+read, then cache it in memory.
+        if self._fh is None:
+            self._fh = open(self.fasta_file, 'r')
+        length, offset, linebases, linewidth = self.index[chrom]
+        nbytes = (length // linebases) * linewidth + (length % linebases)
+        self._fh.seek(offset)
+        raw = self._fh.read(nbytes)
+        self._seq[chrom] = raw.replace("\n", "").replace("\r", "").upper()
+
     def fetch(self, chrom, start, end):
         if chrom not in self.index:
             return "N" * (end - start + 1)
-        
-        length, offset, linebases, linewidth = self.index[chrom]
-        
+        if chrom not in self._seq:
+            self._load(chrom)
+
+        length = self.index[chrom][0]
+        seq = self._seq[chrom]
+
         # Clip to chromosome boundaries
         fetch_start = max(1, start)
         fetch_end = min(length, end)
-        
+
         if fetch_start > fetch_end:
             return "N" * (end - start + 1)
-            
-        # Calculate start and end offsets in the file
-        start_line = (fetch_start - 1) // linebases
-        start_col = (fetch_start - 1) % linebases
-        start_offset = offset + start_line * linewidth + start_col
-        
-        end_line = (fetch_end - 1) // linebases
-        end_col = (fetch_end - 1) % linebases
-        end_offset = offset + end_line * linewidth + end_col
-        
-        # Read the range including newlines
-        self.fasta_file.seek(start_offset)
-        raw_seq = self.fasta_file.read(end_offset - start_offset + 1)
-        
-        # Remove newlines and join
-        seq = raw_seq.replace("\n", "").replace("\r", "").upper()
-        
+
+        motif = seq[fetch_start - 1:fetch_end]
+
         # Pad with Ns if we clipped
         if start < 1:
-            seq = "N" * (1 - start) + seq
+            motif = "N" * (1 - start) + motif
         if end > length:
-            seq = seq + "N" * (end - length)
-            
-        return seq
+            motif = motif + "N" * (end - length)
+
+        return motif
 
 def main():
     import argparse
