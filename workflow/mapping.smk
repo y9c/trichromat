@@ -268,7 +268,7 @@ rule prepare_genes_index:
     threads: 4
     shell:
         """
-        zcat -f {input} | sed 's/(//g' | sed 's/)//g' > {output.fa}
+        zcat -f {input} > {output.fa}
         {config[path][samtools]} faidx {output.fa}
         rm -f {params.prefix}.3n.*.ht2
         {config[path][hisat3nbuild]} -p {threads} --base-change {params.base_change} {output.fa} {params.prefix}
